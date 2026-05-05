@@ -8,6 +8,8 @@ const ALLOWED_KEYS = new Set([
   'education-perfect-tracker-v1',
   'huuuge-tracker-v1',
   'aftership-tracker-v1',
+  'bts-usa-tracker-v1',
+  'donkey-republic-tracker-v1',
 ]);
 
 export default async function handler(req, res) {
