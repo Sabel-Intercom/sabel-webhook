@@ -21,6 +21,7 @@ const ALLOWED_KEYS = [
   'bts-usa-june-tracker-v1',
   'bts-usa-tracker-v1',
   'hero-tolk-tracker-v1',
+  'yfood-tracker-v1',
   'flkitover-tracker-v1',
 ];
 
