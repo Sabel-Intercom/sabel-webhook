@@ -16,13 +16,11 @@ const ALLOWED_KEYS = [
   'bts-tracker-v1',
   'aftership-tracker-v1',
   'bts-usa-june-tracker-v1',
-  'bts-usa-june-tracker-v1',
   'hero-tolk-tracker-v1',
-  'bts-usa-june-tracker-v1',
   'bts-usa-tracker-v1',
-  'hero-tolk-tracker-v1',
   'yfood-tracker-v1',
   'flkitover-tracker-v1',
+  'client-portal-v1',   // ← Client Onboarding/Offboarding Portal (whole-portal state)
 ];
 
 export default async function handler(req, res) {
