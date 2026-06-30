@@ -20,7 +20,8 @@ const ALLOWED_KEYS = [
   'bts-usa-tracker-v1',
   'yfood-tracker-v1',
   'flkitover-tracker-v1',
-  'client-portal-v1',   // ← Client Onboarding/Offboarding Portal (whole-portal state)
+  'client-portal-v1',                // ← Client Onboarding/Offboarding Portal (whole-portal state)
+  'thegivingmovement-tracker-v1',    // ← The Giving Movement project tracker (added)
 ];
 
 export default async function handler(req, res) {
