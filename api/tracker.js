@@ -22,6 +22,7 @@ const ALLOWED_KEYS = [
   'flkitover-tracker-v1',
   'client-portal-v1',                // ← Client Onboarding/Offboarding Portal (whole-portal state)
   'thegivingmovement-tracker-v1',    // ← The Giving Movement project tracker (added)
+  'gps-insight-tracker-v1',
 ];
 
 export default async function handler(req, res) {
