@@ -21,8 +21,8 @@ const ALLOWED_KEYS = [
   'yfood-tracker-v1',
   'flkitover-tracker-v1',
   'client-portal-v1',                // ← Client Onboarding/Offboarding Portal (whole-portal state)
-  'thegivingmovement-tracker-v1',    // ← The Giving Movement project tracker (added)
-  'gps-insight-tracker-v1',
+  'thegivingmovement-tracker-v1',    // ← The Giving Movement project tracker
+  'gps-insight-tracker-v1',          // ← GPS Insight project tracker
 ];
 
 export default async function handler(req, res) {
@@ -31,9 +31,12 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  const key = req.query.key;
+  // Accept the key from the query string (?key=) OR the POST body {key},
+  // so both the older and newer tracker styles work.
+  const body = req.body || {};
+  const key = req.query.key || body.key;
   if (!key) {
-    return res.status(400).json({ ok: false, error: 'Missing ?key= parameter' });
+    return res.status(400).json({ ok: false, error: 'Missing key (query ?key= or body { key })' });
   }
   if (!ALLOWED_KEYS.includes(key)) {
     return res.status(404).json({ ok: false, error: `Unknown tracker key: ${key}` });
@@ -51,9 +54,12 @@ export default async function handler(req, res) {
 
   if (req.method === 'POST') {
     try {
-      const { data } = req.body;
-      if (data === undefined) return res.status(400).json({ ok: false, error: 'No data provided' });
-      await redis.set(key, data);
+      // Accept the payload as { data } (newer trackers) OR { value } (V2 skill trackers).
+      const payload = body.data !== undefined ? body.data : body.value;
+      if (payload === undefined) {
+        return res.status(400).json({ ok: false, error: 'No data provided (expected { data } or { value })' });
+      }
+      await redis.set(key, payload);
       return res.status(200).json({ ok: true });
     } catch (err) {
       console.error('Redis SET error:', err);
