@@ -24,6 +24,7 @@ const ALLOWED_KEYS = [
   'thegivingmovement-tracker-v1',    // ← The Giving Movement project tracker
   'gps-insight-tracker-v1',          // ← GPS Insight project tracker
   'cronos-tracker-v1',
+  'cronos-tracker-v2',
 ];
 
 export default async function handler(req, res) {
