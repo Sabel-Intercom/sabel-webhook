@@ -23,6 +23,7 @@ const ALLOWED_KEYS = [
   'client-portal-v1',                // ← Client Onboarding/Offboarding Portal (whole-portal state)
   'thegivingmovement-tracker-v1',    // ← The Giving Movement project tracker
   'gps-insight-tracker-v1',          // ← GPS Insight project tracker
+  'CronosTracker_v2.html',
 ];
 
 export default async function handler(req, res) {
