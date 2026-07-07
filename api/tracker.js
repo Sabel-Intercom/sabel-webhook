@@ -5,6 +5,14 @@ const redis = Redis.fromEnv();
 // ALLOWED_KEYS — add a new entry here every time a tracker is
 // deployed. Trackers will fail safe (404) if their key isn't
 // in this list, which stops typos from corrupting shared state.
+//
+// WRITES: when the TRACKER_WRITE_TOKEN env var is set in Vercel,
+// every POST must carry that token (header `X-Tracker-Token`,
+// or `token` in the JSON body for older form-style posts).
+// While the env var is unset the API behaves exactly as before
+// (open writes, with a console.warn) — set the env var only
+// AFTER every tracker/portal frontend has been updated to send
+// the token, so live saves never break mid-rollout.
 // ─────────────────────────────────────────────────────────────
 const ALLOWED_KEYS = [
   'raiz-tracker-v1',
@@ -30,7 +38,7 @@ const ALLOWED_KEYS = [
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Tracker-Token');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   // Accept the key from the query string (?key=) OR the POST body {key},
@@ -56,12 +64,42 @@ export default async function handler(req, res) {
 
   if (req.method === 'POST') {
     try {
+      // ── Write-token gate (zero-downtime rollout) ──────────────
+      // Enforced ONLY when TRACKER_WRITE_TOKEN is set in the env.
+      // Token is accepted from the X-Tracker-Token header (preferred)
+      // or a `token` field in the JSON body (old-style form posts).
+      const expectedToken = process.env.TRACKER_WRITE_TOKEN;
+      const providedToken = req.headers['x-tracker-token'] || body.token;
+      if (expectedToken) {
+        if (providedToken !== expectedToken) {
+          return res.status(401).json({ ok: false, error: 'Missing or invalid write token' });
+        }
+      } else {
+        console.warn(
+          `tracker: unauthenticated write to "${key}" — TRACKER_WRITE_TOKEN not set, write gate is OFF`
+        );
+      }
+
       // Accept the payload as { data } (newer trackers) OR { value } (V2 skill trackers).
       const payload = body.data !== undefined ? body.data : body.value;
-      if (payload === undefined) {
-        return res.status(400).json({ ok: false, error: 'No data provided (expected { data } or { value })' });
+      // Reject empty saves: a POST of nothing/null must never overwrite state.
+      if (payload === undefined || payload === null) {
+        return res.status(400).json({ ok: false, error: 'No data provided (expected non-null { data } or { value })' });
       }
       await redis.set(key, payload);
+
+      // Audit stamp — stored under a parallel meta:<key> so the tracker
+      // payload shape (read back raw by every frontend) is never altered.
+      // meta:* keys are not in ALLOWED_KEYS, so they are unreachable via this API.
+      try {
+        await redis.set(`meta:${key}`, {
+          lastWrite: new Date().toISOString(),
+          tokenPresent: Boolean(providedToken),
+        });
+      } catch (metaErr) {
+        console.error('Redis meta SET error (write itself succeeded):', metaErr);
+      }
+
       return res.status(200).json({ ok: true });
     } catch (err) {
       console.error('Redis SET error:', err);
