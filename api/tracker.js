@@ -1,6 +1,5 @@
 import { Redis } from '@upstash/redis';
 const redis = Redis.fromEnv();
-
 // ─────────────────────────────────────────────────────────────
 // ALLOWED_KEYS — add a new entry here every time a tracker is
 // deployed. Trackers will fail safe (404) if their key isn't
@@ -35,13 +34,11 @@ const ALLOWED_KEYS = [
   'tulka-tracker-v1',
   'sabel-weekly-notes-v1',
 ];
-
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Tracker-Token');
   if (req.method === 'OPTIONS') return res.status(200).end();
-
   // Accept the key from the query string (?key=) OR the POST body {key},
   // so both the older and newer tracker styles work.
   const body = req.body || {};
@@ -52,17 +49,22 @@ export default async function handler(req, res) {
   if (!ALLOWED_KEYS.includes(key)) {
     return res.status(404).json({ ok: false, error: `Unknown tracker key: ${key}` });
   }
-
   if (req.method === 'GET') {
     try {
       const data = await redis.get(key);
-      return res.status(200).json({ ok: true, data: data || null });
+      // Return the state under BOTH `data` (object — read by the dashboard and
+      // newer trackers) and `value` (JSON string — read by V2 skill trackers),
+      // so every frontend can load regardless of which field it expects.
+      return res.status(200).json({
+        ok: true,
+        data: data ?? null,
+        value: data == null ? null : JSON.stringify(data),
+      });
     } catch (err) {
       console.error('Redis GET error:', err);
       return res.status(500).json({ ok: false, error: err.message });
     }
   }
-
   if (req.method === 'POST') {
     try {
       // ── Write-token gate (zero-downtime rollout) ──────────────
@@ -80,15 +82,30 @@ export default async function handler(req, res) {
           `tracker: unauthenticated write to "${key}" — TRACKER_WRITE_TOKEN not set, write gate is OFF`
         );
       }
-
-      // Accept the payload as { data } (newer trackers) OR { value } (V2 skill trackers).
-      const payload = body.data !== undefined ? body.data : body.value;
+      // Accept the payload as { data } (newer trackers), { value } (V2 skill
+      // trackers), OR the raw posted body itself (older trackers that POST their
+      // whole state object directly, with the key in the query string). The raw
+      // fallback strips the wrapper fields (key, token) so they never pollute
+      // the stored state.
+      let payload;
+      if (body.data !== undefined) {
+        payload = body.data;
+      } else if (body.value !== undefined) {
+        payload = body.value;
+      } else {
+        const { key: _k, token: _t, ...rest } = body;
+        payload = Object.keys(rest).length ? rest : undefined;
+      }
       // Reject empty saves: a POST of nothing/null must never overwrite state.
       if (payload === undefined || payload === null) {
-        return res.status(400).json({ ok: false, error: 'No data provided (expected non-null { data } or { value })' });
+        return res.status(400).json({ ok: false, error: 'No data provided (expected { data }, { value }, or a state body)' });
+      }
+      // If a JSON string was sent (some skill trackers send value as a string),
+      // store the parsed object so the dashboard can read it directly.
+      if (typeof payload === 'string') {
+        try { payload = JSON.parse(payload); } catch (_) { /* keep as-is if not JSON */ }
       }
       await redis.set(key, payload);
-
       // Audit stamp — stored under a parallel meta:<key> so the tracker
       // payload shape (read back raw by every frontend) is never altered.
       // meta:* keys are not in ALLOWED_KEYS, so they are unreachable via this API.
@@ -100,13 +117,11 @@ export default async function handler(req, res) {
       } catch (metaErr) {
         console.error('Redis meta SET error (write itself succeeded):', metaErr);
       }
-
       return res.status(200).json({ ok: true });
     } catch (err) {
       console.error('Redis SET error:', err);
       return res.status(500).json({ ok: false, error: err.message });
     }
   }
-
   return res.status(405).json({ ok: false, error: 'Method not allowed' });
 }
