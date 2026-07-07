@@ -33,6 +33,7 @@ const ALLOWED_KEYS = [
   'gps-insight-tracker-v1',          // ← GPS Insight project tracker
   'cronos-tracker-v1',
   'tulka-tracker-v1',
+  'sabel-weekly-notes-v1',
 ];
 
 export default async function handler(req, res) {
