@@ -33,6 +33,7 @@ const ALLOWED_KEYS = [
   'cronos-tracker-v1',
   'tulka-tracker-v1',
   'sabel-weekly-notes-v1',
+  'sabel-golive-overrides-v1',
 ];
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
