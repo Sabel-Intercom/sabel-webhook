@@ -34,6 +34,7 @@ const ALLOWED_KEYS = [
   'tulka-tracker-v1',
   'sabel-weekly-notes-v1',
   'sabel-golive-overrides-v1',
+  'positive-salary-packaging-tracker-v1',
 ];
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
