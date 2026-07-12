@@ -35,6 +35,7 @@ const ALLOWED_KEYS = [
   'sabel-weekly-notes-v1',
   'sabel-golive-overrides-v1',
   'positive-salary-packaging-tracker-v1',
+  'sabel-weekly-updates-v1',
 ];
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
