@@ -1,0 +1,2047 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Build your Sabel engagement</title>
+<style>
+  /* ============================================================
+     Sabel pricing configurator — single-file build
+     Brand: dark mode, red accent #E10600, centre-line motif
+     Edit pricing in the CONFIG block at the top of <script> below.
+     ============================================================ */
+  :root {
+    --bg: #0B0B0C;
+    --card: #161618;
+    --card-hover: #1d1d20;
+    --panel: #121214;
+    --input-bg: #0e0e10;
+    --white: #ffffff;
+    --red: #E10600;
+    --red-soft: rgba(225, 6, 0, 0.12);
+    --red-glow: rgba(225, 6, 0, 0.35);
+    --body: #E2E8F0;
+    --muted: #94A3B8;
+    --muted-dim: #64748B;
+    --border: #2A3547;
+    --border-soft: #1E2837;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--body); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
+  a { color: inherit; }
+  button { font-family: inherit; }
+
+  /* ============================================================
+     Layout shell
+     ============================================================ */
+  .page {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+    position: relative;
+  }
+  /* Centre red line motif */
+  .page::before {
+    content: "";
+    position: absolute;
+    top: 240px;
+    bottom: 0;
+    left: 50%;
+    width: 1px;
+    background: rgba(225, 6, 0, 0.18);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Hero */
+  .hero {
+    text-align: center;
+    padding: 56px 0 80px;
+    position: relative;
+    z-index: 1;
+  }
+  .hero .label {
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 12px;
+    letter-spacing: 0.16em;
+    color: var(--red);
+    margin-bottom: 24px;
+  }
+  .hero h1 {
+    font-size: clamp(32px, 4.5vw, 56px);
+    font-weight: 800;
+    margin: 0 0 16px;
+    color: var(--white);
+    letter-spacing: -0.01em;
+  }
+  .hero p {
+    font-size: 18px;
+    color: var(--muted);
+    max-width: 720px;
+    margin: 0 auto;
+    line-height: 1.5;
+  }
+  .hero .stub {
+    width: 2px;
+    height: 56px;
+    background: var(--red);
+    margin: 40px auto 0;
+  }
+
+  /* Step header */
+  .step-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 24px;
+    margin: 0 0 32px;
+    position: relative;
+    z-index: 2;
+  }
+  .step-badge {
+    width: 60px; height: 60px;
+    border-radius: 50%;
+    background: var(--card);
+    border: 2px solid var(--red);
+    color: var(--white);
+    font-weight: 700;
+    font-size: 17px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 2;
+  }
+  .step-title h2 { margin: 0; font-size: clamp(28px, 3vw, 40px); color: var(--white); font-weight: 700; }
+  .step-title .sub { margin: 4px 0 0; color: var(--muted); font-size: 15px; }
+
+  /* Zone shell */
+  .zone {
+    background: var(--panel);
+    border: 1px solid var(--border-soft);
+    border-radius: 16px;
+    padding: 44px 32px 40px;
+    margin-bottom: 48px;
+    position: relative;
+    z-index: 1;
+  }
+  .zone-builder {
+    background: transparent;
+    border: none;
+    padding: 0;
+  }
+
+  /* Step section labels (mono red) */
+  .section-label {
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    color: var(--red);
+    margin: 32px 0 12px;
+    padding-bottom: 6px;
+    display: inline-block;
+    border-bottom: 2px solid var(--red);
+  }
+
+  /* ============================================================
+     Step 1 — qualifier
+     ============================================================ */
+  .q-block { margin-top: 32px; }
+  .q-block h3 { font-size: 22px; color: var(--white); margin: 0 0 18px; font-weight: 700; }
+
+  .radio-row, .checkbox-row { display: grid; gap: 16px; }
+  .radio-row { grid-template-columns: 1fr 1fr; }
+  @media (max-width: 720px) { .radio-row { grid-template-columns: 1fr; } }
+
+  .selectable {
+    background: var(--card);
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    padding: 22px 24px;
+    cursor: pointer;
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .selectable:hover { background: var(--card-hover); border-color: var(--muted-dim); }
+  .selectable.is-selected {
+    border-color: var(--red);
+    box-shadow: 0 0 0 1px var(--red), 0 0 24px var(--red-glow);
+  }
+  .selectable .radio-dot {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    flex-shrink: 0;
+    margin-top: 2px;
+    position: relative;
+  }
+  .selectable.is-selected .radio-dot { border-color: var(--red); }
+  .selectable.is-selected .radio-dot::after {
+    content: "";
+    position: absolute;
+    top: 4px; left: 4px;
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: var(--red);
+  }
+  .selectable .checkbox-tick {
+    width: 24px; height: 24px;
+    border-radius: 4px;
+    border: 2px solid var(--border);
+    flex-shrink: 0;
+    margin-top: 2px;
+    position: relative;
+  }
+  .selectable.is-selected .checkbox-tick {
+    background: var(--red);
+    border-color: var(--red);
+  }
+  .selectable.is-selected .checkbox-tick::after {
+    content: "";
+    position: absolute;
+    top: 4px; left: 8px;
+    width: 6px; height: 12px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+  .selectable .label-block { flex: 1; }
+  .selectable .label-block .name { color: var(--white); font-weight: 700; font-size: 17px; }
+  .selectable .label-block .desc { color: var(--muted); font-size: 14px; margin-top: 4px; }
+
+  .platform-list {
+    margin-top: 12px;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  .platform-list .platform-list-label {
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    color: var(--muted-dim);
+    margin-right: 6px;
+    text-transform: uppercase;
+  }
+  .platform-list .platform-name {
+    color: var(--body);
+    font-weight: 600;
+  }
+  .platform-list .platform-sep {
+    color: var(--muted-dim);
+    margin: 0 6px;
+  }
+
+  /* Pill-button group (team size, complexity) */
+  .pill-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 14px;
+  }
+  .pill-btn {
+    background: var(--card);
+    border: 2px solid var(--border);
+    color: var(--muted);
+    border-radius: 999px;
+    padding: 12px 24px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .pill-btn:hover { border-color: var(--muted-dim); color: var(--body); }
+  .pill-btn.is-selected {
+    background: var(--red);
+    border-color: var(--red);
+    color: var(--white);
+  }
+
+  /* ============================================================
+     Step 2 — builder
+     ============================================================ */
+  /* ============================================================
+     Scoping shell — left column (qualifier + builder), floating right panel
+     ============================================================ */
+  .scoping-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 340px;
+    gap: 36px;
+    align-items: start;
+    position: relative;
+    z-index: 2;
+  }
+  .scoping-column { min-width: 0; }
+  @media (max-width: 980px) {
+    .scoping-grid { grid-template-columns: 1fr; }
+  }
+
+  .components { display: flex; flex-direction: column; gap: 16px; }
+
+  .component {
+    background: var(--card);
+    border: 1px solid var(--border-soft);
+    border-radius: 12px;
+    padding: 24px 28px;
+    position: relative;
+    transition: border-color 0.15s;
+  }
+  .component::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 16px; bottom: 16px;
+    width: 4px;
+    background: var(--red);
+    border-radius: 2px;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .component.is-active::before { opacity: 1; }
+  .component.is-active {
+    box-shadow: 0 0 24px var(--red-glow);
+  }
+
+  .comp-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 24px;
+  }
+  .comp-title {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 6px;
+  }
+  .comp-title .name { font-size: 18px; font-weight: 700; color: var(--white); }
+  .comp-title .learn-more {
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 11px;
+    color: var(--muted);
+    text-decoration: none;
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    padding: 4px 10px;
+    border-radius: 6px;
+    letter-spacing: 0.04em;
+  }
+  .comp-title .learn-more:hover { color: var(--white); border-color: var(--muted); }
+  .comp-desc { color: var(--muted); font-size: 14px; margin: 0; }
+  .comp-price-block { text-align: right; flex-shrink: 0; }
+  .comp-price { font-size: 18px; font-weight: 700; color: var(--white); white-space: nowrap; }
+  .comp-price .from { color: var(--muted); font-weight: 400; font-size: 14px; margin-right: 4px; }
+  .comp-hours { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 11px; color: var(--muted-dim); margin-top: 4px; }
+
+  .comp-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    margin-top: 18px;
+  }
+
+  .toggle-row { display: flex; align-items: center; gap: 12px; margin-top: 14px; }
+  .toggle-switch {
+    width: 48px;
+    height: 26px;
+    background: var(--border);
+    border-radius: 13px;
+    cursor: pointer;
+    position: relative;
+    flex-shrink: 0;
+    transition: background 0.2s;
+  }
+  .toggle-switch::after {
+    content: "";
+    position: absolute;
+    top: 3px; left: 3px;
+    width: 20px; height: 20px;
+    background: var(--white);
+    border-radius: 50%;
+    transition: left 0.2s;
+  }
+  .toggle-switch.is-on { background: var(--red); }
+  .toggle-switch.is-on::after { left: 25px; }
+  .toggle-label { font-size: 14px; color: var(--body); }
+
+  .counter {
+    display: flex;
+    align-items: center;
+    background: var(--input-bg);
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .counter button {
+    background: none;
+    border: none;
+    color: var(--muted);
+    width: 44px;
+    height: 48px;
+    font-size: 22px;
+    cursor: pointer;
+    transition: color 0.15s;
+  }
+  .counter button:hover { color: var(--white); }
+  .counter button:disabled { color: var(--border); cursor: not-allowed; }
+  .counter .value {
+    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    color: var(--white);
+    font-weight: 700;
+    padding: 0 18px;
+    min-width: 130px;
+    text-align: center;
+    font-size: 15px;
+  }
+
+  .small-pill-btn {
+    background: var(--card);
+    border: 2px solid var(--border);
+    color: var(--muted);
+    border-radius: 999px;
+    padding: 10px 18px;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .small-pill-btn:hover { color: var(--body); border-color: var(--muted-dim); }
+  .small-pill-btn.is-selected { background: var(--red); border-color: var(--red); color: var(--white); }
+
+  .select-input {
+    background: var(--input-bg);
+    border: 2px solid var(--border);
+    color: var(--white);
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+    min-width: 220px;
+  }
+  .select-input:focus { outline: none; border-color: var(--red); }
+
+  .slider-wrap { flex: 1; min-width: 240px; display: flex; align-items: center; gap: 14px; }
+  .slider-input {
+    appearance: none;
+    -webkit-appearance: none;
+    flex: 1;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    outline: none;
+    margin: 0;
+  }
+  .slider-input::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: var(--white);
+    border: 3px solid var(--red);
+    cursor: pointer;
+  }
+  .slider-input::-moz-range-thumb {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: var(--white);
+    border: 3px solid var(--red);
+    cursor: pointer;
+  }
+  .slider-value {
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 13px;
+    color: var(--white);
+    font-weight: 700;
+    min-width: 130px;
+    text-align: right;
+  }
+
+  /* Tag */
+  .tag {
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    background: var(--red-soft);
+    color: var(--red);
+    padding: 4px 10px;
+    border-radius: 6px;
+  }
+  .tag.muted { background: rgba(148, 163, 184, 0.1); color: var(--muted); }
+
+  /* Retainer card */
+  .retainer-card {
+    background: var(--card);
+    border: 2px solid var(--red);
+    border-radius: 14px;
+    padding: 28px 28px 24px;
+    margin-top: 24px;
+    position: relative;
+  }
+  .retainer-card::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 16px; bottom: 16px;
+    width: 4px;
+    background: var(--red);
+    border-radius: 2px;
+  }
+  .retainer-tiers {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-top: 22px;
+  }
+  @media (min-width: 1280px) { .retainer-tiers { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 540px) { .retainer-tiers { grid-template-columns: 1fr; } }
+  .retainer-tier {
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 14px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s;
+    position: relative;
+  }
+  .retainer-tier:hover { border-color: var(--muted-dim); }
+  .retainer-tier.is-selected {
+    background: rgba(225, 6, 0, 0.08);
+    border-color: var(--red);
+  }
+  .retainer-tier.is-selected::after {
+    content: "SELECTED";
+    position: absolute;
+    top: -10px; left: 50%;
+    transform: translateX(-50%);
+    background: var(--red);
+    color: var(--white);
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 10px;
+    padding: 3px 10px;
+    border-radius: 6px;
+    letter-spacing: 0.08em;
+  }
+  .retainer-tier .tier-name { color: var(--white); font-weight: 700; font-size: 16px; }
+  .retainer-tier .tier-hours { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 11px; color: var(--muted); margin-top: 4px; }
+  .retainer-tier hr { border: none; border-top: 1px solid var(--border); margin: 12px 0; }
+  .retainer-tier ul { list-style: none; padding: 0; margin: 0; text-align: left; }
+  .retainer-tier li { font-size: 12.5px; color: var(--body); margin-bottom: 6px; padding-left: 14px; position: relative; line-height: 1.35; }
+  .retainer-tier li::before {
+    content: "–";
+    position: absolute; left: 0;
+    color: var(--red);
+    font-weight: 700;
+  }
+  .clear-retainer {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 12px;
+    cursor: pointer;
+    margin-top: 16px;
+  }
+  .clear-retainer:hover { color: var(--white); border-color: var(--muted); }
+
+  /* ============================================================
+     Right-hand price panel
+     ============================================================ */
+  .price-panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 0 0 24px;
+    overflow: hidden;
+    position: sticky;
+    top: 24px;
+  }
+  @media (max-width: 980px) {
+    .price-panel { position: static; }
+  }
+  .price-panel .header {
+    background: #06060a;
+    padding: 18px;
+    text-align: center;
+    border-bottom: 1px solid var(--border-soft);
+  }
+  .price-panel .header .label {
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    color: var(--white);
+  }
+  .currency-pill {
+    display: flex;
+    background: #06060a;
+    border-radius: 999px;
+    padding: 4px;
+    margin: 22px 24px 0;
+    border: 1px solid var(--border);
+  }
+  .currency-pill button {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--white);
+    font-weight: 700;
+    font-size: 13px;
+    padding: 10px 0;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .currency-pill button.is-selected { background: var(--red); }
+
+  .total-block { text-align: center; padding: 28px 24px 18px; }
+  .total-block .from-label {
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 11px;
+    color: var(--red);
+    letter-spacing: 0.12em;
+  }
+  .total-block .total {
+    font-size: 44px;
+    font-weight: 800;
+    color: var(--white);
+    margin: 8px 0 6px;
+    letter-spacing: -0.02em;
+  }
+  .total-block .total-meta {
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .breakdown { padding: 0 24px; border-top: 1px solid var(--border-soft); padding-top: 18px; }
+  .breakdown-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    font-size: 13px;
+  }
+  .breakdown-row .label { color: var(--body); flex: 1; padding-right: 12px; }
+  .breakdown-row .value { color: var(--white); font-weight: 700; }
+  .breakdown-row.empty .label { color: var(--muted-dim); font-style: italic; }
+  .breakdown-row.empty .value { color: var(--muted-dim); }
+  .breakdown-divider { border: none; border-top: 1px solid var(--border-soft); margin: 12px 0; }
+  .breakdown-row.subtotal .label { color: var(--white); font-weight: 700; font-size: 14px; }
+  .breakdown-row.subtotal .value { color: var(--red); font-weight: 700; font-size: 14px; }
+  .breakdown-row.retainer .value { font-size: 13px; }
+
+  .disclaimer {
+    text-align: center;
+    color: var(--muted-dim);
+    font-size: 11px;
+    font-style: italic;
+    padding: 18px 28px 8px;
+    line-height: 1.5;
+  }
+
+  .panel-cta {
+    padding: 0 24px;
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .btn-primary, .btn-secondary {
+    display: block;
+    width: 100%;
+    padding: 16px;
+    border-radius: 10px;
+    text-align: center;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    border: none;
+    transition: opacity 0.15s, background 0.15s;
+    font-family: inherit;
+  }
+  .btn-primary {
+    background: var(--red);
+    color: var(--white);
+  }
+  .btn-primary:hover { opacity: 0.92; }
+  .btn-secondary {
+    background: var(--card);
+    color: var(--white);
+    border: 2px solid var(--border);
+  }
+  .btn-secondary:hover { border-color: var(--muted); }
+
+  /* ============================================================
+     Footer note
+     ============================================================ */
+  .page-footer {
+    text-align: center;
+    margin-top: 80px;
+    color: var(--muted-dim);
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+  }
+  .page-footer .red { color: var(--red); }
+
+  /* PDF download spinner / disabled */
+  .btn-secondary:disabled {
+    opacity: 0.6;
+    cursor: wait;
+  }
+
+  /* ============================================================
+     Calculate modal (form gate)
+     ============================================================ */
+  .modal-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(0, 0, 0, 0.78);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 24px;
+    backdrop-filter: blur(2px);
+  }
+  .modal-backdrop.is-open { display: flex; }
+  .modal {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    width: 100%;
+    max-width: 460px;
+    padding: 36px 32px 28px;
+    position: relative;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
+  }
+  .modal::before {
+    content: "";
+    position: absolute;
+    left: 36px; top: 0;
+    width: 40px; height: 4px;
+    background: var(--red);
+    border-radius: 0 0 4px 4px;
+  }
+  .modal-close {
+    position: absolute; top: 14px; right: 14px;
+    background: none; border: none;
+    color: var(--muted);
+    font-size: 22px;
+    cursor: pointer;
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    line-height: 1;
+  }
+  .modal-close:hover { color: var(--white); background: rgba(255,255,255,0.06); }
+  .modal h3 {
+    color: var(--white);
+    font-size: 22px;
+    margin: 0 0 8px;
+  }
+  .modal .modal-sub {
+    color: var(--muted);
+    font-size: 14px;
+    margin: 0 0 24px;
+    line-height: 1.5;
+  }
+  .modal label {
+    display: block;
+    font-size: 12px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    margin-bottom: 6px;
+    margin-top: 14px;
+  }
+  .modal input {
+    width: 100%;
+    background: var(--input-bg);
+    border: 2px solid var(--border);
+    color: var(--white);
+    padding: 12px 14px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+    transition: border-color 0.15s;
+  }
+  .modal input:focus { outline: none; border-color: var(--red); }
+  .modal input.is-error { border-color: var(--red); }
+  .modal .field-error {
+    color: var(--red);
+    font-size: 12px;
+    margin-top: 6px;
+    display: none;
+  }
+  .modal .field-error.is-shown { display: block; }
+  .modal-cta {
+    margin-top: 24px;
+    width: 100%;
+    background: var(--red);
+    color: var(--white);
+    border: none;
+    padding: 16px;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: opacity 0.15s;
+  }
+  .modal-cta:hover { opacity: 0.92; }
+  .modal-cta:disabled { opacity: 0.5; cursor: wait; }
+  .modal .submit-error {
+    margin-top: 14px;
+    background: rgba(225, 6, 0, 0.12);
+    color: var(--red);
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    display: none;
+  }
+  .modal .submit-error.is-shown { display: block; }
+  .modal .privacy-note {
+    margin-top: 14px;
+    font-size: 11px;
+    color: var(--muted-dim);
+    text-align: center;
+    line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- HERO -->
+  <header class="hero">
+    <div class="label">ENGAGEMENTS &amp; PRICING &nbsp;·&nbsp; BUILD YOUR OWN</div>
+    <h1>Build your Sabel engagement</h1>
+    <p>Tell us where you are, pick the components you need. Live pricing as you go.</p>
+    <div class="stub"></div>
+  </header>
+
+  <!-- Two-column scoping shell: left = both zones, right = price panel that floats -->
+  <div class="scoping-grid">
+
+    <div class="scoping-column">
+
+      <!-- ZONE 1 — QUALIFIER -->
+      <section class="zone" id="zone-qualifier">
+        <div class="step-header">
+          <div class="step-badge">01</div>
+          <div class="step-title">
+            <h2>Where are you with Intercom?</h2>
+            <p class="sub">Tell us your situation so we can tailor the components and defaults below.</p>
+          </div>
+        </div>
+
+        <div class="q-block">
+          <h3>1. Your Intercom setup</h3>
+          <div class="radio-row" id="setup-radios">
+            <label class="selectable is-selected" data-value="new">
+              <span class="radio-dot"></span>
+              <span class="label-block">
+                <span class="name">New to Intercom</span>
+                <span class="desc">Starting from a clean workspace</span>
+              </span>
+            </label>
+            <label class="selectable" data-value="existing">
+              <span class="radio-dot"></span>
+              <span class="label-block">
+                <span class="name">Already live on Intercom</span>
+                <span class="desc">Optimising an existing setup</span>
+              </span>
+            </label>
+          </div>
+
+          <div class="checkbox-row" style="margin-top:16px;">
+            <label class="selectable" id="migration-check">
+              <span class="checkbox-tick"></span>
+              <span class="label-block">
+                <span class="name">Migration required <span class="tag" style="margin-left:8px;">VIA MIGR8NOW</span></span>
+                <span class="desc">Migrating from another platform.</span>
+                <div class="platform-list">
+                  <span class="platform-list-label">Supported:</span>
+                  <span class="platform-name">Zendesk</span><span class="platform-sep">·</span><span class="platform-name">Freshdesk</span><span class="platform-sep">·</span><span class="platform-name">Help Scout</span><span class="platform-sep">·</span><span class="platform-name">Zoho Desk</span><span class="platform-sep">·</span><span class="platform-name">LiveChat</span><span class="platform-sep">·</span><span class="platform-name">Salesforce Service Cloud</span><span class="platform-sep">·</span><span class="platform-name">Intercom</span>
+                </div>
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <div class="q-block">
+          <h3>2. How large is your CX team?</h3>
+          <div class="pill-group" id="team-size">
+            <button class="pill-btn is-selected" data-value="1-5">1–5 agents</button>
+            <button class="pill-btn" data-value="6-15">6–15 agents</button>
+            <button class="pill-btn" data-value="16-50">16–50 agents</button>
+            <button class="pill-btn" data-value="50+">50+ agents</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ZONE 2 — BUILDER -->
+      <section class="zone zone-builder" id="zone-builder">
+        <div class="step-header">
+          <div class="step-badge">02</div>
+          <div class="step-title">
+            <h2>Build your engagement</h2>
+            <p class="sub">All components are optional. Adjust counts and complexity to match your needs.</p>
+          </div>
+        </div>
+
+        <!-- Components flow full width of the column -->
+        <div class="components" id="components-list">
+          <!-- Components rendered by JS -->
+        </div>
+      </section>
+
+    </div><!-- /.scoping-column -->
+
+    <!-- Floating sticky price panel (sibling to .scoping-column) -->
+    <aside class="price-panel" id="price-panel">
+      <div class="header">
+        <div class="label">YOUR ENGAGEMENT</div>
+      </div>
+
+      <div class="currency-pill" id="currency-pill">
+        <button data-currency="USD">USD</button>
+        <button data-currency="AUD" class="is-selected">AUD</button>
+        <button data-currency="EUR">EUR</button>
+        <button data-currency="GBP">GBP</button>
+      </div>
+
+      <div class="total-block">
+        <div class="from-label">FROM</div>
+        <div class="total" id="grand-total">$0</div>
+        <div class="total-meta" id="total-meta">AUD, project total (indicative)</div>
+      </div>
+
+      <div class="breakdown" id="breakdown-list">
+        <!-- Breakdown rendered by JS -->
+      </div>
+
+      <div class="disclaimer">
+        Prices shown are indicative estimates based on your selections.
+        Final scope confirmed during discovery.
+      </div>
+
+      <div class="panel-cta">
+        <button class="btn-primary" id="cta-book">Book a discovery call</button>
+        <button class="btn-secondary" id="cta-pdf">Download estimate (PDF)</button>
+      </div>
+    </aside>
+
+  </div><!-- /.scoping-grid -->
+
+  <footer class="page-footer">
+    <span class="red">PERFECT MADE POSSIBLE</span> &nbsp;·&nbsp; sabelcustomersuccess.com
+  </footer>
+
+</div>
+
+<!-- Calculate-gate modal -->
+<div class="modal-backdrop" id="calc-modal" role="dialog" aria-modal="true" aria-labelledby="calc-modal-title">
+  <div class="modal">
+    <button class="modal-close" id="calc-modal-close" aria-label="Close">×</button>
+    <h3 id="calc-modal-title">Reveal your estimate</h3>
+    <p class="modal-sub">Tell us who you are and we'll show your indicative engagement pricing right here, plus drop a copy in our inbox so we can follow up if helpful.</p>
+
+    <label for="calc-name">Your name</label>
+    <input type="text" id="calc-name" autocomplete="name" required>
+    <div class="field-error" id="err-name">Please enter your name.</div>
+
+    <label for="calc-company">Company</label>
+    <input type="text" id="calc-company" autocomplete="organization" required>
+    <div class="field-error" id="err-company">Please enter your company name.</div>
+
+    <button class="modal-cta" id="calc-submit">Reveal my estimate</button>
+
+    <div class="submit-error" id="submit-error"></div>
+
+    <p class="privacy-note">We use your details to follow up on your enquiry. No spam, no sharing.</p>
+  </div>
+</div>
+
+<!-- jsPDF for the PDF download -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script>
+/* ============================================================
+   CONFIG  —  edit numbers here, no need to touch logic below
+   ============================================================ */
+const CONFIG = {
+
+  // Hourly rate (USD) used for component pricing
+  hourlyRate: 200,
+
+  // FX rates (multiplier from USD)
+  fx: {
+    USD: 1.0,
+    AUD: 1.3944,
+    EUR: 0.85,
+    GBP: 0.70,
+  },
+  currencySymbol: { USD: "$", AUD: "$", EUR: "€", GBP: "£" },
+
+  // Complexity multipliers (applied to component hours)
+  complexity: {
+    Simple:   0.75,
+    Moderate: 1.00,
+    Complex:  1.50,
+  },
+
+  // ---------- Components (per-tab structure mirrors your Excel) ----------
+  components: [
+    {
+      id: "transformation-blueprint",
+      pillar: "TRANSFORMATION",
+      name: "Transformation Blueprint",
+      desc: "Strategy, journey mapping, operating model, KPI plan, and roadmap.",
+      learnMore: "https://www.sabelcustomersuccess.com/services/transformation-blueprint",
+      unitLabel: "engagement",
+      baseHours: 10,
+      defaultCount: 1,
+      maxCount: 1,
+      defaultComplexity: "Moderate",
+      addable: true,            // toggle on/off
+      defaultEnabled: false,
+    },
+    {
+      id: "foundation-setup",
+      pillar: "FOUNDATIONS",
+      name: "Foundation Setup",
+      desc: "Workspace, brands, channels, teams, inboxes, routing, and core configuration.",
+      learnMore: "https://www.sabelcustomersuccess.com/services/intercom-foundations",
+      unitLabel: "workspace",
+      baseHours: 28,
+      defaultCount: 1,
+      maxCount: 5,
+      defaultComplexity: "Moderate",
+      addable: true,
+      defaultEnabled: false,
+    },
+    {
+      id: "workflows",
+      pillar: "AUTOMATION ENGINE",
+      name: "Workflows",
+      desc: "Routing, tagging, assignment, and channel-specific logic.",
+      learnMore: "https://www.sabelcustomersuccess.com/services/automation-engine#workflows",
+      unitLabel: "workflow",
+      baseHours: 3,
+      defaultCount: 1,
+      maxCount: 50,
+      defaultComplexity: "Moderate",
+      addable: true,
+      defaultEnabled: false,
+    },
+    {
+      id: "fin-procedures",
+      pillar: "AUTOMATION ENGINE",
+      name: "Fin Procedures",
+      desc: "Structured, reusable reasoning steps for Fin. Components + procedures.",
+      learnMore: "https://www.sabelcustomersuccess.com/services/automation-engine#fin-procedures",
+      unitLabel: "procedure",
+      baseHours: 10,
+      defaultCount: 1,
+      maxCount: 30,
+      defaultComplexity: "Moderate",
+      addable: true,
+      defaultEnabled: false,
+    },
+    {
+      id: "integrations",
+      pillar: "AUTOMATION ENGINE",
+      name: "Integrations",
+      desc: "CRM, billing, product data. Salesforce, HubSpot, Stripe, Shopify, custom API.",
+      learnMore: "https://www.sabelcustomersuccess.com/services/automation-engine#integrations",
+      unitLabel: "integration",
+      baseHours: 20,
+      defaultCount: 1,
+      maxCount: 20,
+      defaultComplexity: "Moderate",
+      addable: true,
+      defaultEnabled: false,
+    },
+    {
+      id: "help-centre",
+      pillar: "FIN ENABLEMENT",
+      name: "Help Centre Content",
+      desc: "Fin-optimised articles written and structured for maximum resolution.",
+      learnMore: "https://www.sabelcustomersuccess.com/services/fin-enablement#help-centre",
+      unitLabel: "article",
+      baseHours: 0.01,         // approximation — 1hr per 100 articles
+      defaultCount: 50,
+      maxCount: 1000,
+      defaultComplexity: "Moderate",
+      addable: true,
+      defaultEnabled: false,
+    },
+  ],
+
+  // ---------- Migration ----------
+  migration: {
+    learnMore: "https://www.sabelcustomersuccess.com/services/migration-accelerator",
+    minPriceUSD: 500,        // Floor
+
+    // Cumulative tier model. Tier order MUST be ascending by qty.
+    tiers: [
+      { qty: 50000,    totalUSD: 1053, perTicket: 0.0210609 },
+      { qty: 100000,   totalUSD: 1781, perTicket: 0.0178146 },
+      { qty: 500000,   totalUSD: 3317, perTicket: 0.0066330 },
+      { qty: 750000,   totalUSD: 4050, perTicket: 0.0053998 },
+      { qty: 1000000,  totalUSD: 5254, perTicket: 0.0052542 },
+    ],
+
+    // Per-platform surcharge multipliers (multiply against base unit below)
+    surchargeBaseUSD: 1500,
+    platforms: {
+      "Zendesk":                  { multiplier: 0.0,  fallback: false },
+      "Freshdesk":                { multiplier: 0.0,  fallback: false },
+      "Help Scout":               { multiplier: 0.0,  fallback: false },
+      "Intercom":                 { multiplier: 0.0,  fallback: false },
+      "LiveChat":                 { multiplier: 1.5,  fallback: false },
+      "Zoho Desk":                { multiplier: 1.5,  fallback: false },
+      "Salesforce Service Cloud": { multiplier: 2.0,  fallback: false },
+      "Other":                    { multiplier: 1.5,  fallback: true  },
+    },
+  },
+
+  // ---------- Retainer tiers ----------
+  retainerTiers: [
+    {
+      id: "starter",
+      name: "Starter",
+      hoursPerMonth: 5,
+      pricing: { USD: 1000, AUD: 1500, EUR: 800, GBP: 660 },
+      inclusions: [
+        "Monthly Fin snapshot",
+        "Minor content tweaks",
+        "2-day response",
+        "Quarterly health note",
+      ],
+    },
+    {
+      id: "essentials",
+      name: "Essentials",
+      hoursPerMonth: 10,
+      pricing: { USD: 1900, AUD: 2850, EUR: 1520, GBP: 1254 },
+      inclusions: [
+        "Everything in Starter",
+        "Monthly review call",
+        "Workflow & Action work",
+        "1-day response",
+      ],
+    },
+    {
+      id: "growth",
+      name: "Growth",
+      hoursPerMonth: 15,
+      pricing: { USD: 2700, AUD: 4050, EUR: 2160, GBP: 1782 },
+      inclusions: [
+        "Everything in Essentials",
+        "Monthly strategy call",
+        "Integrations & Actions",
+        "Priority response",
+      ],
+    },
+    {
+      id: "engine",
+      name: "Engine",
+      hoursPerMonth: 30,
+      pricing: { USD: 5100, AUD: 7650, EUR: 4080, GBP: 3366 },
+      inclusions: [
+        "Everything in Growth",
+        "Dedicated L3 hours",
+        "Monthly deep-dive",
+        "4-hour SLA",
+      ],
+    },
+    {
+      id: "partner",
+      name: "Partner",
+      hoursPerMonth: 60,
+      pricing: { USD: 9600, AUD: 14400, EUR: 7680, GBP: 6336 },
+      inclusions: [
+        "Everything in Engine",
+        "Embedded delivery team",
+        "Executive QBR",
+        "2-hour SLA",
+      ],
+    },
+  ],
+
+  // CTA URLs
+  bookingUrl: "https://book.sabelcustomersuccess.com/bookmeeting",
+
+  // Where to POST the calculator submission. The endpoint validates fields
+  // and forwards to your inbox via Resend. See api/calculator-submit.js.
+  submissionEndpoint: "https://sabel-webhook.vercel.app/api/calculator-submit",
+};
+
+/* ============================================================
+   STATE
+   ============================================================ */
+const state = {
+  setup: "new",                        // "new" | "existing"
+  migrationEnabled: false,
+  teamSize: "1-5",
+  currency: localStorage.getItem("sabelCurrency") || "AUD",
+
+  // Component state — keyed by component id
+  components: {},
+  // Migration state
+  migration: {
+    sourcePlatform: "Zendesk",
+    ticketVolume: 150000,
+  },
+  // Retainer
+  retainerSelected: null,
+
+  // Reveal gate
+  priceRevealed: false,
+  contact: { name: "", company: "" },
+};
+
+// Initialise component state from defaults
+CONFIG.components.forEach(c => {
+  state.components[c.id] = {
+    enabled: c.defaultEnabled,
+    count: c.defaultCount,
+    complexity: c.defaultComplexity,
+  };
+});
+
+/* ============================================================
+   PRICING LOGIC
+   ============================================================ */
+function calcComponentHours(c) {
+  const s = state.components[c.id];
+  if (!s.enabled || s.count === 0) return 0;
+  const mult = CONFIG.complexity[s.complexity];
+  return c.baseHours * s.count * mult;
+}
+function calcComponentUSD(c) {
+  return calcComponentHours(c) * CONFIG.hourlyRate;
+}
+
+function calcMigrationUSD() {
+  if (!state.migrationEnabled) return 0;
+
+  const qty = state.migration.ticketVolume;
+  const tiers = CONFIG.migration.tiers;
+  let subtotal;
+
+  if (qty <= 0) {
+    subtotal = 0;
+  } else if (qty < tiers[0].qty) {
+    // Below smallest tier — use first tier's per-ticket rate
+    subtotal = qty * tiers[0].perTicket;
+  } else {
+    // Find largest tier where qty >= tier.qty
+    let i = 0;
+    for (let k = 0; k < tiers.length; k++) {
+      if (tiers[k].qty <= qty) i = k;
+    }
+    const base = tiers[i].totalUSD;
+    const surplus = qty - tiers[i].qty;
+    // Per Excel formula: nextRate = INDEX(rates, MIN(i+1, ROWS(rates)))
+    // Use the NEXT tier's per-ticket rate for surplus calculation,
+    // or the current tier's rate if we're already at the top tier.
+    const nextRate = i + 1 < tiers.length
+      ? tiers[i + 1].perTicket
+      : tiers[i].perTicket;
+    subtotal = base + (surplus * nextRate);
+  }
+
+  // Surcharge lookup
+  const platDef = CONFIG.migration.platforms[state.migration.sourcePlatform]
+                  || CONFIG.migration.platforms["Other"];
+  const surcharge = CONFIG.migration.surchargeBaseUSD * platDef.multiplier;
+
+  let total = subtotal + surcharge;
+
+  // Apply minimum floor (only if there's any volume at all)
+  if (qty > 0 && total < CONFIG.migration.minPriceUSD) {
+    total = CONFIG.migration.minPriceUSD;
+  }
+
+  return total;
+}
+
+function getRetainerUSD() {
+  if (!state.retainerSelected) return 0;
+  const tier = CONFIG.retainerTiers.find(t => t.id === state.retainerSelected);
+  return tier ? tier.pricing.USD : 0;
+}
+
+function calcProjectSubtotalUSD() {
+  let total = CONFIG.components.reduce((sum, c) => sum + calcComponentUSD(c), 0);
+  total += calcMigrationUSD();
+  return total;
+}
+
+/* ============================================================
+   FORMATTING
+   ============================================================ */
+function fmtCurrency(amountUSD, currency) {
+  const cur = currency || state.currency;
+  const fxd = amountUSD * CONFIG.fx[cur];
+  const sym = CONFIG.currencySymbol[cur];
+  return sym + Math.round(fxd).toLocaleString("en-US");
+}
+function fmtNumber(n) {
+  return Number(n).toLocaleString("en-US");
+}
+
+/* ============================================================
+   RENDERING
+   ============================================================ */
+
+// ---------- Step 1 — qualifier wiring ----------
+function wireQualifier() {
+  // Setup radio row
+  document.querySelectorAll("#setup-radios .selectable").forEach(el => {
+    el.addEventListener("click", () => {
+      document.querySelectorAll("#setup-radios .selectable").forEach(x => x.classList.remove("is-selected"));
+      el.classList.add("is-selected");
+      state.setup = el.dataset.value;
+      // Material change to scope — re-gate
+      if (state.priceRevealed) state.priceRevealed = false;
+      renderAll();
+    });
+  });
+
+  // Migration checkbox
+  const mig = document.getElementById("migration-check");
+  if (state.migrationEnabled) mig.classList.add("is-selected");
+  mig.addEventListener("click", () => {
+    state.migrationEnabled = !state.migrationEnabled;
+    mig.classList.toggle("is-selected", state.migrationEnabled);
+    if (state.priceRevealed) state.priceRevealed = false;
+    renderAll();
+  });
+
+  // Team size pills
+  document.querySelectorAll("#team-size .pill-btn").forEach(el => {
+    el.addEventListener("click", () => {
+      document.querySelectorAll("#team-size .pill-btn").forEach(x => x.classList.remove("is-selected"));
+      el.classList.add("is-selected");
+      state.teamSize = el.dataset.value;
+      // Team size doesn't affect price, but kept in scope
+    });
+  });
+}
+
+// ---------- Step 2 — component builder ----------
+function renderComponents() {
+  const root = document.getElementById("components-list");
+  root.innerHTML = "";
+
+  // Group by pillar
+  const groups = {};
+  CONFIG.components.forEach(c => {
+    if (!groups[c.pillar]) groups[c.pillar] = [];
+    groups[c.pillar].push(c);
+  });
+
+  Object.entries(groups).forEach(([pillar, comps]) => {
+    const label = document.createElement("div");
+    label.className = "section-label";
+    label.textContent = pillar;
+    root.appendChild(label);
+
+    comps.forEach(c => {
+      root.appendChild(renderComponent(c));
+    });
+  });
+
+  // Migration card after the Migration section label
+  if (state.migrationEnabled) {
+    const migLabel = document.createElement("div");
+    migLabel.className = "section-label";
+    migLabel.textContent = "MIGRATION";
+    root.appendChild(migLabel);
+    root.appendChild(renderMigration());
+  }
+
+  // Retainer section
+  const retLabel = document.createElement("div");
+  retLabel.className = "section-label";
+  retLabel.textContent = "ONGOING OPTIMISATION";
+  root.appendChild(retLabel);
+  root.appendChild(renderRetainer());
+}
+
+function renderComponent(c) {
+  const s = state.components[c.id];
+  const div = document.createElement("div");
+  div.className = "component" + (s.enabled ? " is-active" : "");
+
+  const usd = calcComponentUSD(c);
+  const priceLabel = s.enabled ? (state.priceRevealed ? fmtCurrency(usd) : "Calculating") : "Not added";
+
+  div.innerHTML = `
+    <div class="comp-head">
+      <div>
+        <div class="comp-title">
+          <span class="name">${c.name}</span>
+          <a class="learn-more" href="${c.learnMore}" target="_blank" rel="noopener">Learn more ↗</a>
+        </div>
+        <p class="comp-desc">${c.desc}</p>
+      </div>
+      <div class="comp-price-block">
+        <div class="comp-price"><span class="from">${s.enabled && state.priceRevealed ? "From" : ""}</span>${priceLabel}</div>
+      </div>
+    </div>
+
+    <div class="toggle-row">
+      <div class="toggle-switch ${s.enabled ? "is-on" : ""}" data-component="${c.id}" data-action="toggle"></div>
+      <span class="toggle-label">${s.enabled ? "Included in your engagement" : "Add to your engagement"}</span>
+    </div>
+
+    ${s.enabled ? `
+      <div class="comp-controls">
+        <div class="counter">
+          <button data-component="${c.id}" data-action="dec" ${s.count <= 0 ? "disabled" : ""}>−</button>
+          <span class="value">${fmtNumber(s.count)} ${c.unitLabel}${s.count === 1 ? "" : "s"}</span>
+          <button data-component="${c.id}" data-action="inc" ${s.count >= c.maxCount ? "disabled" : ""}>+</button>
+        </div>
+        ${["Simple","Moderate","Complex"].map(level => `
+          <button class="small-pill-btn ${s.complexity === level ? "is-selected" : ""}"
+                  data-component="${c.id}" data-action="complexity" data-level="${level}">${level}</button>
+        `).join("")}
+      </div>
+    ` : ""}
+  `;
+
+  // Wire actions
+  div.querySelectorAll("[data-action]").forEach(el => {
+    el.addEventListener("click", e => {
+      const action = el.dataset.action;
+      const id = el.dataset.component;
+      const comp = state.components[id];
+      const cfg = CONFIG.components.find(x => x.id === id);
+
+      if (action === "toggle") {
+        comp.enabled = !comp.enabled;
+        if (comp.enabled && comp.count === 0) comp.count = cfg.defaultCount || 1;
+      } else if (action === "inc") {
+        if (comp.count < cfg.maxCount) comp.count += 1;
+      } else if (action === "dec") {
+        if (comp.count > 0) comp.count -= 1;
+      } else if (action === "complexity") {
+        comp.complexity = el.dataset.level;
+      }
+      renderAll();
+    });
+  });
+
+  return div;
+}
+
+function renderMigration() {
+  const div = document.createElement("div");
+  div.className = "component is-active";
+
+  const usd = calcMigrationUSD();
+  const platformOpts = Object.keys(CONFIG.migration.platforms).filter(k => !CONFIG.migration.platforms[k].fallback);
+  const priceLabel = state.priceRevealed ? fmtCurrency(usd) : "Calculating";
+
+  div.innerHTML = `
+    <div class="comp-head">
+      <div style="flex:1;">
+        <div class="comp-title">
+          <span class="name">Migration</span>
+          <a class="learn-more" href="${CONFIG.migration.learnMore}" target="_blank" rel="noopener">Learn more ↗</a>
+          <span class="tag">VIA MIGR8NOW</span>
+        </div>
+        <p class="comp-desc">Tickets, users, articles, tags, and historical data via Migr8Now.</p>
+      </div>
+      <div class="comp-price-block">
+        <div class="comp-price"><span class="from">${state.priceRevealed ? "From" : ""}</span>${priceLabel}</div>
+      </div>
+    </div>
+
+    <div class="comp-controls" style="gap:24px; align-items:center;">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <label style="color:var(--body); font-size:14px;">Source:</label>
+        <select class="select-input" id="mig-source">
+          ${platformOpts.map(p => `<option value="${p}" ${state.migration.sourcePlatform === p ? "selected" : ""}>${p}</option>`).join("")}
+        </select>
+      </div>
+      <div class="slider-wrap">
+        <label style="color:var(--body); font-size:14px; white-space:nowrap;">Volume:</label>
+        <input type="range" class="slider-input" id="mig-volume"
+               min="0" max="2000000" step="10000" value="${state.migration.ticketVolume}">
+        <span class="slider-value" id="mig-volume-label">~${fmtNumber(state.migration.ticketVolume)} tickets</span>
+      </div>
+    </div>
+  `;
+
+  div.querySelector("#mig-source").addEventListener("change", e => {
+    state.migration.sourcePlatform = e.target.value;
+    renderAll();
+  });
+  const slider = div.querySelector("#mig-volume");
+  const lab = div.querySelector("#mig-volume-label");
+  slider.addEventListener("input", e => {
+    state.migration.ticketVolume = parseInt(e.target.value, 10);
+    lab.textContent = "~" + fmtNumber(state.migration.ticketVolume) + " tickets";
+    if (state.priceRevealed) {
+      div.querySelector(".comp-price-block .comp-price").innerHTML =
+        `<span class="from">From</span>${fmtCurrency(calcMigrationUSD())}`;
+    }
+    renderPricePanel();
+  });
+
+  return div;
+}
+
+function renderRetainer() {
+  const div = document.createElement("div");
+  div.className = "retainer-card";
+
+  div.innerHTML = `
+    <div class="comp-head">
+      <div style="flex:1;">
+        <div class="comp-title">
+          <span class="name">Ongoing Retainer</span>
+          <a class="learn-more" href="https://www.sabelcustomersuccess.com/services/retainer" target="_blank" rel="noopener">Learn more ↗</a>
+          <span class="tag">RECOMMENDED AFTER LAUNCH</span>
+        </div>
+        <p class="comp-desc">Continuous Fin tuning, workflow optimisation, and support. Hours pool quarterly.</p>
+      </div>
+    </div>
+
+    <div class="retainer-tiers">
+      ${CONFIG.retainerTiers.map(t => `
+        <div class="retainer-tier ${state.retainerSelected === t.id ? "is-selected" : ""}" data-tier="${t.id}">
+          <div class="tier-name">${t.name}</div>
+          <div class="tier-hours">${t.hoursPerMonth} HRS / MO</div>
+          <hr>
+          <ul>${t.inclusions.map(i => `<li>${i}</li>`).join("")}</ul>
+        </div>
+      `).join("")}
+    </div>
+    ${state.retainerSelected ? `<button class="clear-retainer" id="clear-retainer">Remove retainer</button>` : ""}
+  `;
+
+  div.querySelectorAll(".retainer-tier").forEach(el => {
+    el.addEventListener("click", () => {
+      state.retainerSelected = el.dataset.tier;
+      renderAll();
+    });
+  });
+  const clear = div.querySelector("#clear-retainer");
+  if (clear) clear.addEventListener("click", () => {
+    state.retainerSelected = null;
+    renderAll();
+  });
+
+  return div;
+}
+
+// ---------- Right panel ----------
+function renderPricePanel() {
+  const projectUSD = calcProjectSubtotalUSD();
+  const retainerUSD = getRetainerUSD();
+
+  const totalEl = document.getElementById("grand-total");
+  const metaEl = document.getElementById("total-meta");
+  const fromLabel = document.querySelector(".total-block .from-label");
+
+  if (state.priceRevealed) {
+    fromLabel.textContent = "FROM";
+    totalEl.textContent = fmtCurrency(projectUSD);
+    metaEl.textContent = `${state.currency}, project total (indicative)`;
+  } else {
+    fromLabel.textContent = "";
+    totalEl.textContent = "$ —";
+    totalEl.style.color = "var(--muted-dim)";
+    metaEl.textContent = `Click Calculate to reveal pricing`;
+  }
+  if (state.priceRevealed) totalEl.style.color = "";
+
+  // Build breakdown
+  const root = document.getElementById("breakdown-list");
+  const items = [];
+
+  CONFIG.components.forEach(c => {
+    const s = state.components[c.id];
+    if (s.enabled && s.count > 0) {
+      const usd = calcComponentUSD(c);
+      const unitLabel = s.count === 1 ? c.unitLabel : c.unitLabel + 's';
+      items.push({
+        label: `${c.name} (${s.count} ${unitLabel})`,
+        value: state.priceRevealed ? fmtCurrency(usd) : "—",
+      });
+    }
+  });
+
+  if (state.migrationEnabled) {
+    items.push({
+      label: `Migration (${fmtNumber(state.migration.ticketVolume)}, ${state.migration.sourcePlatform})`,
+      value: state.priceRevealed ? fmtCurrency(calcMigrationUSD()) : "—",
+    });
+  }
+
+  let html = "";
+  if (items.length === 0) {
+    html = `<div class="breakdown-row empty"><span class="label">No components selected yet</span><span class="value">—</span></div>`;
+  } else {
+    html = items.map(it => `
+      <div class="breakdown-row">
+        <span class="label">${it.label}</span>
+        <span class="value">${it.value}</span>
+      </div>
+    `).join("");
+  }
+
+  // Subtotal
+  html += `
+    <hr class="breakdown-divider">
+    <div class="breakdown-row subtotal">
+      <span class="label">Project subtotal</span>
+      <span class="value">${state.priceRevealed ? "From " + fmtCurrency(projectUSD) : "—"}</span>
+    </div>
+  `;
+
+  // Retainer
+  if (state.retainerSelected && retainerUSD > 0) {
+    const tier = CONFIG.retainerTiers.find(t => t.id === state.retainerSelected);
+    html += `
+      <div class="breakdown-row retainer" style="margin-top:14px;">
+        <span class="label">Retainer · ${tier.name}</span>
+        <span class="value">${state.priceRevealed ? fmtCurrency(retainerUSD) + " / mo" : "—"}</span>
+      </div>
+      <div class="breakdown-row retainer">
+        <span class="label" style="color:var(--muted-dim); font-size:12px;">First quarter commitment</span>
+        <span class="value" style="color:var(--muted); font-weight:600;">${state.priceRevealed ? fmtCurrency(retainerUSD * 3) : "—"}</span>
+      </div>
+    `;
+  }
+
+  root.innerHTML = html;
+
+  // CTAs reveal-aware
+  const btnPrimary = document.getElementById("cta-book");
+  const btnSecondary = document.getElementById("cta-pdf");
+  if (state.priceRevealed) {
+    btnPrimary.textContent = "Book a discovery call";
+    btnPrimary.dataset.action = "book";
+    btnSecondary.style.display = "block";
+  } else {
+    btnPrimary.textContent = "Calculate my engagement";
+    btnPrimary.dataset.action = "calculate";
+    btnSecondary.style.display = "none";
+  }
+}
+
+// ---------- Currency pill ----------
+function wireCurrencyPill() {
+  // Set initial selected state from localStorage
+  document.querySelectorAll("#currency-pill button").forEach(b => {
+    b.classList.toggle("is-selected", b.dataset.currency === state.currency);
+  });
+  document.querySelectorAll("#currency-pill button").forEach(b => {
+    b.addEventListener("click", () => {
+      state.currency = b.dataset.currency;
+      localStorage.setItem("sabelCurrency", state.currency);
+      document.querySelectorAll("#currency-pill button").forEach(x => x.classList.remove("is-selected"));
+      b.classList.add("is-selected");
+      renderAll();
+    });
+  });
+}
+
+// ---------- CTAs ----------
+function wireCTAs() {
+  document.getElementById("cta-book").addEventListener("click", () => {
+    if (state.priceRevealed) {
+      window.open(CONFIG.bookingUrl, "_blank");
+    } else {
+      openCalculateModal();
+    }
+  });
+  document.getElementById("cta-pdf").addEventListener("click", generatePDF);
+}
+
+// ---------- PDF generation ----------
+function generatePDF() {
+  const btn = document.getElementById("cta-pdf");
+  btn.disabled = true;
+  btn.textContent = "Generating...";
+
+  try {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: "pt", format: "a4" });
+
+    const W = doc.internal.pageSize.getWidth();
+    const H = doc.internal.pageSize.getHeight();
+    const M = 40;
+    let y = M + 20;
+
+    const RED = [225, 6, 0];
+    const DARK = [30, 41, 59];
+    const MUTED = [100, 116, 139];
+    const BODY = [51, 65, 85];
+
+    // Header
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.setTextColor(...RED);
+    doc.text("SABEL CUSTOMER SUCCESS", M, y);
+    y += 8;
+    doc.setDrawColor(...RED);
+    doc.setLineWidth(2);
+    doc.line(M, y, M + 80, y);
+
+    y += 30;
+    doc.setFontSize(24);
+    doc.setTextColor(...DARK);
+    doc.text("Engagement Estimate", M, y);
+
+    y += 30;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(...MUTED);
+    doc.text(`Generated ${new Date().toLocaleDateString()} · Indicative pricing only · Final scope confirmed during discovery.`, M, y);
+
+    // Setup details
+    y += 40;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.setTextColor(...RED);
+    doc.text("YOUR SETUP", M, y);
+    y += 6;
+    doc.setLineWidth(1);
+    doc.line(M, y, M + 60, y);
+    y += 18;
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(11);
+    doc.setTextColor(...BODY);
+    const setupLabel = state.setup === "new" ? "New to Intercom" : "Already live on Intercom";
+    const teamLabel = state.teamSize + " agents";
+    doc.text(`Intercom: ${setupLabel}${state.migrationEnabled ? " · Migration required" : ""}`, M, y);
+    y += 16;
+    doc.text(`Team size: ${teamLabel}`, M, y);
+    y += 16;
+    doc.text(`Currency: ${state.currency}`, M, y);
+
+    // Components
+    y += 36;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.setTextColor(...RED);
+    doc.text("PROJECT COMPONENTS", M, y);
+    y += 6;
+    doc.line(M, y, M + 100, y);
+    y += 22;
+
+    const projectUSD = calcProjectSubtotalUSD();
+
+    CONFIG.components.forEach(c => {
+      const s = state.components[c.id];
+      if (s.enabled && s.count > 0) {
+        const usd = calcComponentUSD(c);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(11);
+        doc.setTextColor(...DARK);
+        doc.text(`${c.name}`, M, y);
+        doc.text(fmtCurrency(usd), W - M, y, { align: "right" });
+        y += 14;
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        doc.setTextColor(...MUTED);
+        doc.text(`${s.count} × ${s.complexity.toLowerCase()} · ${calcComponentHours(c).toFixed(1)} hrs`, M, y);
+        y += 18;
+      }
+    });
+
+    if (state.migrationEnabled) {
+      const usd = calcMigrationUSD();
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      doc.setTextColor(...DARK);
+      doc.text(`Migration`, M, y);
+      doc.text(fmtCurrency(usd), W - M, y, { align: "right" });
+      y += 14;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.setTextColor(...MUTED);
+      doc.text(`${fmtNumber(state.migration.ticketVolume)} tickets from ${state.migration.sourcePlatform} · via Migr8Now`, M, y);
+      y += 18;
+    }
+
+    // Subtotal
+    y += 6;
+    doc.setDrawColor(200, 200, 200);
+    doc.line(M, y, W - M, y);
+    y += 22;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(13);
+    doc.setTextColor(...DARK);
+    doc.text("Project subtotal", M, y);
+    doc.setTextColor(...RED);
+    doc.text("From " + fmtCurrency(projectUSD), W - M, y, { align: "right" });
+
+    // Retainer
+    if (state.retainerSelected) {
+      y += 36;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      doc.setTextColor(...RED);
+      doc.text("ONGOING RETAINER", M, y);
+      y += 6;
+      doc.line(M, y, M + 100, y);
+      y += 22;
+
+      const tier = CONFIG.retainerTiers.find(t => t.id === state.retainerSelected);
+      const usd = tier.pricing.USD;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      doc.setTextColor(...DARK);
+      doc.text(`${tier.name} retainer`, M, y);
+      doc.text(`${fmtCurrency(usd)} / mo`, W - M, y, { align: "right" });
+      y += 14;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.setTextColor(...MUTED);
+      doc.text(`${tier.hoursPerMonth} hrs/mo · pooled quarterly`, M, y);
+      y += 14;
+      doc.text(`First-quarter commitment: ${fmtCurrency(usd * 3)}`, M, y);
+    }
+
+    // Footer
+    const footY = H - 50;
+    doc.setFont("courier", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(...MUTED);
+    doc.text("PERFECT MADE POSSIBLE  ·  sabelcustomersuccess.com", W / 2, footY, { align: "center" });
+    doc.setFontSize(7);
+    doc.text("Indicative estimate only. Final scope and pricing confirmed during discovery.", W / 2, footY + 14, { align: "center" });
+
+    doc.save(`Sabel_Estimate_${new Date().toISOString().slice(0,10)}.pdf`);
+  } catch (err) {
+    console.error("PDF generation failed:", err);
+    alert("Could not generate PDF. Please try again or contact us directly.");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Download estimate (PDF)";
+  }
+}
+
+/* ============================================================
+   CALCULATE GATE — modal + submission
+   ============================================================ */
+function openCalculateModal() {
+  const modal = document.getElementById("calc-modal");
+  modal.classList.add("is-open");
+  // Pre-fill from saved state
+  document.getElementById("calc-name").value = state.contact.name;
+  document.getElementById("calc-company").value = state.contact.company;
+  setTimeout(() => document.getElementById("calc-name").focus(), 60);
+  clearFieldErrors();
+}
+
+function closeCalculateModal() {
+  document.getElementById("calc-modal").classList.remove("is-open");
+}
+
+function clearFieldErrors() {
+  ["err-name", "err-company"].forEach(id => {
+    document.getElementById(id).classList.remove("is-shown");
+  });
+  ["calc-name", "calc-company"].forEach(id => {
+    document.getElementById(id).classList.remove("is-error");
+  });
+  document.getElementById("submit-error").classList.remove("is-shown");
+}
+
+function validateForm() {
+  clearFieldErrors();
+  const name = document.getElementById("calc-name").value.trim();
+  const company = document.getElementById("calc-company").value.trim();
+  let ok = true;
+
+  if (!name) {
+    document.getElementById("calc-name").classList.add("is-error");
+    document.getElementById("err-name").classList.add("is-shown");
+    ok = false;
+  }
+  if (!company) {
+    document.getElementById("calc-company").classList.add("is-error");
+    document.getElementById("err-company").classList.add("is-shown");
+    ok = false;
+  }
+  return ok ? { name, company } : null;
+}
+
+function buildSubmissionPayload(contact) {
+  // Compose a clean JSON payload reflecting current state
+  const fxRate = CONFIG.fx[state.currency];
+  const symbol = CONFIG.currencySymbol[state.currency];
+  const projectUSD = calcProjectSubtotalUSD();
+
+  const components = CONFIG.components
+    .filter(c => state.components[c.id].enabled && state.components[c.id].count > 0)
+    .map(c => {
+      const s = state.components[c.id];
+      const hours = calcComponentHours(c);
+      const priceUSD = calcComponentUSD(c);
+      return {
+        id: c.id,
+        name: c.name,
+        count: s.count,
+        complexity: s.complexity,
+        unitLabel: c.unitLabel,
+        hours: Number(hours.toFixed(2)),
+        priceUSD: Math.round(priceUSD),
+        priceClient: Math.round(priceUSD * fxRate),
+      };
+    });
+
+  let totalHours = components.reduce((sum, c) => sum + c.hours, 0);
+
+  let migration = null;
+  if (state.migrationEnabled) {
+    const migUSD = calcMigrationUSD();
+    const platDef = CONFIG.migration.platforms[state.migration.sourcePlatform]
+                    || CONFIG.migration.platforms["Other"];
+    const surcharge = CONFIG.migration.surchargeBaseUSD * platDef.multiplier;
+    migration = {
+      sourcePlatform: state.migration.sourcePlatform,
+      ticketVolume: state.migration.ticketVolume,
+      surchargeUSD: Math.round(surcharge),
+      priceUSD: Math.round(migUSD),
+      priceClient: Math.round(migUSD * fxRate),
+    };
+  }
+
+  let retainer = null;
+  if (state.retainerSelected) {
+    const tier = CONFIG.retainerTiers.find(t => t.id === state.retainerSelected);
+    if (tier) {
+      retainer = {
+        tierId: tier.id,
+        tierName: tier.name,
+        hoursPerMonth: tier.hoursPerMonth,
+        priceUSD: tier.pricing.USD,
+        priceClient: tier.pricing[state.currency] || tier.pricing.USD,
+      };
+    }
+  }
+
+  return {
+    contact,
+    setup: {
+      key: state.setup,
+      label: state.setup === "new" ? "New to Intercom" : "Already live on Intercom",
+      migrationRequired: state.migrationEnabled,
+      teamSize: state.teamSize,
+    },
+    components,
+    migration,
+    retainer,
+    pricing: {
+      currency: state.currency,
+      currencySymbol: symbol,
+      fxRate,
+      hourlyRateUSD: CONFIG.hourlyRate,
+      totalHours: Number(totalHours.toFixed(2)),
+      projectSubtotalUSD: Math.round(projectUSD),
+      projectSubtotalClient: Math.round(projectUSD * fxRate),
+    },
+    meta: {
+      submittedAt: new Date().toISOString(),
+      page: window.location.href,
+    },
+  };
+}
+
+async function submitCalculation() {
+  const contact = validateForm();
+  if (!contact) return;
+
+  const btn = document.getElementById("calc-submit");
+  const errEl = document.getElementById("submit-error");
+  errEl.classList.remove("is-shown");
+  btn.disabled = true;
+  btn.textContent = "Submitting...";
+
+  const payload = buildSubmissionPayload(contact);
+
+  try {
+    const res = await fetch(CONFIG.submissionEndpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      errEl.textContent = data.error || "Could not submit. Please try again or email us directly.";
+      errEl.classList.add("is-shown");
+      btn.disabled = false;
+      btn.textContent = "Reveal my estimate";
+      return;
+    }
+    // Success — save contact, reveal price, close modal
+    state.contact = contact;
+    state.priceRevealed = true;
+    closeCalculateModal();
+    renderAll();
+    // Reset modal button
+    btn.disabled = false;
+    btn.textContent = "Reveal my estimate";
+  } catch (err) {
+    console.error("Submission failed:", err);
+    errEl.textContent = "Network error. Please check your connection and try again.";
+    errEl.classList.add("is-shown");
+    btn.disabled = false;
+    btn.textContent = "Reveal my estimate";
+  }
+}
+
+function wireModal() {
+  document.getElementById("calc-modal-close").addEventListener("click", closeCalculateModal);
+  document.getElementById("calc-modal").addEventListener("click", e => {
+    if (e.target.id === "calc-modal") closeCalculateModal();
+  });
+  document.getElementById("calc-submit").addEventListener("click", submitCalculation);
+  // Enter key submits
+  ["calc-name", "calc-company"].forEach(id => {
+    document.getElementById(id).addEventListener("keydown", e => {
+      if (e.key === "Enter") submitCalculation();
+    });
+  });
+  // Escape closes
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape" && document.getElementById("calc-modal").classList.contains("is-open")) {
+      closeCalculateModal();
+    }
+  });
+}
+
+
+function renderAll() {
+  renderComponents();
+  renderPricePanel();
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  wireQualifier();
+  wireCurrencyPill();
+  wireCTAs();
+  wireModal();
+  renderAll();
+});
+</script>
+
+</body>
+</html>
