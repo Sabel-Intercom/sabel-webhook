@@ -98,7 +98,7 @@ function buildEmailHtml(payload) {
           </div>
         </td>
         <td style="padding:10px 12px; border-bottom:1px solid ${BORDER}; text-align:right; font-weight:700; color:${DARK}; white-space:nowrap;">
-          ${fmtMoney(migration.priceClient, currency, symbol)}
+          ${migration.bespoke ? 'Bespoke quote' : fmtMoney(migration.priceClient, currency, symbol)}
         </td>
       </tr>
     `;
