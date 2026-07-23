@@ -37,7 +37,7 @@ const ALLOWED_KEYS = [
   'positive-salary-packaging-tracker-v1',
   'sabel-weekly-updates-v1',
   'soundingboard-tracker-v1',
-  'sabel-client-info-v1'
+  'sabel-client-info-v1',
   'eugenelabs-tracker-v1'
 ];
 export default async function handler(req, res) {
