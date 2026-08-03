@@ -39,6 +39,7 @@ const ALLOWED_KEYS = [
   'soundingboard-tracker-v1',
   'sabel-client-info-v1',
   'eugenelabs-tracker-v1',
+  'sabel-hours-v1',                  // ← internal hours tracker + menu bar widget
 ];
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
