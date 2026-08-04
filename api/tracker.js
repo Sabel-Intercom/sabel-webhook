@@ -40,6 +40,7 @@ const ALLOWED_KEYS = [
   'sabel-client-info-v1',
   'eugenelabs-tracker-v1',
   'sabel-hours-v1',                  // ← internal hours tracker + menu bar widget
+  'synchronest-tracker-v1'
 ];
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
