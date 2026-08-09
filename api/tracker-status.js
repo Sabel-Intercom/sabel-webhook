@@ -85,10 +85,14 @@ export default async function handler(req, res) {
 
     const applied = [];
     const missing = [];
-    if (Array.isArray(state.phases)) {
-      // Legacy phased shape (e.g. Raiz): mutate the task objects in place.
+    // Legacy phased shape comes in two encodings: a bare array of phases
+    // (oldest React trackers: spartans, aftership, EP, cirqul) or wrapped
+    // as { phases: [...] } (Raiz, Hero Tolk).
+    const phasesArr = Array.isArray(state) ? state
+      : Array.isArray(state.phases) ? state.phases : null;
+    if (phasesArr) {
       const byId = {};
-      for (const phase of state.phases) {
+      for (const phase of phasesArr) {
         for (const t of phase.tasks || []) byId[t.id] = t;
       }
       for (const [taskId, status] of Object.entries(updates)) {
