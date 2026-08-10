@@ -42,6 +42,69 @@ const ALLOWED_KEYS = [
   'sabel-hours-v1',                  // ← internal hours tracker + menu bar widget
   'synchronest-tracker-v1'
 ];
+
+// ─────────────────────────────────────────────────────────────
+// SLACK NOTIFICATIONS (optional).
+//
+// On each save we diff the incoming state against what is currently
+// stored, BEFORE writing it. Any CLIENT task that has just flipped to
+// Complete triggers one Slack message. Detection is server-side, so
+// there is exactly one notification per real event no matter how many
+// people have the tracker open, and nothing is exposed in the
+// client-facing HTML.
+//
+// Only fires for trackers whose payload uses the { statuses, buildV,
+// taskData } shape with `-c-` client task ids. Trackers with any other
+// payload shape (e.g. FlkitOver's { phases, colWidths }) never match and
+// are unaffected.
+//
+// Set SLACK_WEBHOOK_URL in Vercel env vars to enable. Without it, saves
+// behave exactly as before. Notification failures never block a save.
+// ─────────────────────────────────────────────────────────────
+const SLACK = process.env.SLACK_WEBHOOK_URL;
+
+// Newly-Complete CLIENT tasks between the stored state and the incoming
+// save. Skips first-ever saves and rebuilds (different buildV), where a
+// diff would be meaningless or would mass-fire.
+function clientCompletions(oldP, newP) {
+  if (!oldP || !newP || typeof oldP !== 'object' || typeof newP !== 'object') return [];
+  if (!oldP.statuses || !newP.statuses) return [];
+  if (oldP.buildV !== newP.buildV) return [];
+  const out = [];
+  for (const cid of Object.keys(newP.statuses)) {
+    if (!cid.includes('-c-')) continue; // client tasks only
+    if (newP.statuses[cid] === 'Complete' && oldP.statuses[cid] !== undefined && oldP.statuses[cid] !== 'Complete') {
+      const m = cid.match(/^(.*)-c-(\d+)$/);
+      let title = cid, owner = '', week = '', pillar = m ? m[1] : '';
+      if (m && newP.taskData && newP.taskData[m[1]] && Array.isArray(newP.taskData[m[1]].client)) {
+        const t = newP.taskData[m[1]].client[parseInt(m[2], 10)];
+        if (t) {
+          title = t.t || title;
+          owner = t.o || '';
+          week = t.week ? ('Week ' + t.week + (t.wkEnd ? '-' + t.wkEnd : '')) : '';
+        }
+      }
+      out.push({ pillar, title, owner, week });
+    }
+  }
+  return out;
+}
+
+async function notifySlack(key, items) {
+  if (!SLACK || !items.length) return;
+  const lines = items.map(i =>
+    `:white_check_mark: *${i.owner || 'Client'}* completed: "${i.title}"` +
+    (i.week ? ` · ${i.week}` : '') + (i.pillar ? ` · ${i.pillar}` : ''));
+  const text = `Client progress on \`${key}\`:\n` + lines.join('\n');
+  try {
+    await fetch(SLACK, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text })
+    });
+  } catch (e) { /* notifications must never block saves */ }
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -113,6 +176,15 @@ export default async function handler(req, res) {
       if (typeof payload === 'string') {
         try { payload = JSON.parse(payload); } catch (_) { /* keep as-is if not JSON */ }
       }
+      // Diff BEFORE writing so we can detect newly-Complete client tasks.
+      // Any failure here must never block the save.
+      let notifyItems = [];
+      try {
+        const prev = await redis.get(key);
+        notifyItems = clientCompletions(prev, payload);
+      } catch (diffErr) {
+        console.error('tracker: completion diff failed (save unaffected):', diffErr);
+      }
       await redis.set(key, payload);
       // Audit stamp — stored under a parallel meta:<key> so the tracker
       // payload shape (read back raw by every frontend) is never altered.
@@ -125,7 +197,10 @@ export default async function handler(req, res) {
       } catch (metaErr) {
         console.error('Redis meta SET error (write itself succeeded):', metaErr);
       }
-      return res.status(200).json({ ok: true });
+      // Fire Slack notifications AFTER the write is durable. Awaited because
+      // serverless functions freeze after the response is sent.
+      await notifySlack(key, notifyItems);
+      return res.status(200).json({ ok: true, notified: notifyItems.length });
     } catch (err) {
       console.error('Redis SET error:', err);
       return res.status(500).json({ ok: false, error: err.message });
