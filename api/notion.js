@@ -99,6 +99,11 @@ async function projects(token, res) {
       status: txt(q['Status']),
       trackerKey: txt(q['Tracker key']),
       trackerUrl: txt(q['Tracker URL']),
+            // Signed paperwork: the Sabel-branded proposal or SOW, and on partner
+      // deals Intercom's own SOW. Either can be absent; the contracts screen
+      // links whichever are set.
+      sabelDoc: txt(q['Sabel doc']),
+      intercomSow: txt(q['Intercom SOW']),
       hours: num(q['Contract hours']),
       // Contract terms run 12 months from this date; the expiry watch derives from it.
       contractStart: q['Contract start'] && q['Contract start'].date
