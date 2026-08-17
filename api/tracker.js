@@ -41,6 +41,7 @@ const ALLOWED_KEYS = [
   'eugenelabs-tracker-v1',
   'sabel-hours-v1',                  // ← internal hours tracker + menu bar widget
   'synchronest-tracker-v1'
+  'sabel-allhands-v1'                // ← Call capture, shared across the team
 ];
 
 // ─────────────────────────────────────────────────────────────
