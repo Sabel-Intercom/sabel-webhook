@@ -42,7 +42,8 @@ const ALLOWED_KEYS = [
   'sabel-hours-v1',                  // ← internal hours tracker + menu bar widget
   'synchronest-tracker-v1',
   'sabel-allhands-v1',                // ← Call capture, shared across the team
-  'clevercards-tracker-v1'
+  'clevercards-tracker-v1',
+  'cheekykiwitravel-tracker-v1',
 ];
 
 // ─────────────────────────────────────────────────────────────
