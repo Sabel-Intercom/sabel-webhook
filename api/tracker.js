@@ -44,6 +44,7 @@ const ALLOWED_KEYS = [
   'sabel-allhands-v1',                // ← Call capture, shared across the team
   'clevercards-tracker-v1',
   'cheekykiwitravel-tracker-v1',
+  'shiftmove-tracker-v1',
 ];
 
 // ─────────────────────────────────────────────────────────────
