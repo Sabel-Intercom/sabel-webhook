@@ -46,6 +46,7 @@ const ALLOWED_KEYS = [
   'cheekykiwitravel-tracker-v1',
   'shiftmove-tracker-v1',
   'sabel-migration-watch-v1',   // ← Nikki's internal migration desk
+  'sabel-kickoff-v1',
 ];
 
 // ─────────────────────────────────────────────────────────────
