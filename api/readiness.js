@@ -26,8 +26,19 @@
 // Email and Slack are both best effort. Neither failing ever loses a submission:
 // the store write happens first and is what the client's success screen reflects.
 
-const BASE   = process.env.UPSTASH_REDIS_REST_URL;
-const TOKEN  = process.env.UPSTASH_REDIS_REST_TOKEN;
+/* The Upstash credentials on this project are not guaranteed to be under the
+   names Upstash's own docs use — Vercel's integration writes KV_REST_API_*,
+   a manual setup usually writes UPSTASH_REDIS_REST_*, and older projects use
+   REDIS_*. Read whichever pair is actually present rather than making Richard
+   duplicate them. */
+const BASE = process.env.UPSTASH_REDIS_REST_URL
+          || process.env.KV_REST_API_URL
+          || process.env.REDIS_REST_URL
+          || process.env.STORAGE_REST_API_URL;
+const TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN
+           || process.env.KV_REST_API_TOKEN
+           || process.env.REDIS_REST_TOKEN
+           || process.env.STORAGE_REST_API_TOKEN;
 const ADMIN  = process.env.READINESS_ADMIN_TOKEN;
 const RESEND = process.env.RESEND_API_KEY;
 const FROM   = process.env.RESEND_FROM || 'Sabel Forms <onboarding@resend.dev>';
@@ -204,6 +215,16 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
+
+  if (!BASE || !TOKEN) {
+    return res.status(503).json({
+      error: 'Storage is not configured for this function.',
+      detail: 'No Upstash REST URL/token found. Set UPSTASH_REDIS_REST_URL and ' +
+              'UPSTASH_REDIS_REST_TOKEN on the sabel-webhook project (or tell us which ' +
+              'names the existing tracker endpoint uses and we will read those).',
+      sawUrl: !!BASE, sawToken: !!TOKEN
+    });
+  }
 
   try {
     /* ---- read: the admin page ---- */
