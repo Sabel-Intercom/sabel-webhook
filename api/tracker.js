@@ -47,7 +47,6 @@ const ALLOWED_KEYS = [
   'shiftmove-tracker-v1',
   'sabel-migration-watch-v1',   // ← Nikki's internal migration desk
   'sabel-kickoff-v1',
-  'richard-board-v1',
 ];
 
 // ─────────────────────────────────────────────────────────────
