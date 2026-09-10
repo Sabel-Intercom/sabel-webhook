@@ -5,6 +5,7 @@
 //   POST  /api/readiness              store a submission, then notify
 //   GET   /api/readiness?token=…      list submissions (newest first)
 //   GET   /api/readiness?token=…&id=… fetch one full submission
+//   DELETE /api/readiness?token=…&id=… remove one (admin page Remove button)
 //
 // STORAGE (Upstash Redis, same instance the trackers use)
 //   readiness:sub:<id>   one submission, JSON
@@ -22,6 +23,8 @@
 //                              The domain must be verified in Resend.
 //   NOTIFY_EMAIL               optional. Defaults to admin@sabelcustomersuccess.com
 //   SLACK_WEBHOOK_URL          optional. Already set if the tracker pings Slack.
+//   READINESS_ADMIN_URL        optional. Where the admin page lives; the Slack
+//                              message links to it with ?id=<submission>.
 //
 // Email and Slack are both best effort. Neither failing ever loses a submission:
 // the store write happens first and is what the client's success screen reflects.
@@ -44,6 +47,7 @@ const RESEND = process.env.RESEND_API_KEY;
 const FROM   = process.env.RESEND_FROM || 'Sabel Forms <onboarding@resend.dev>';
 const TO     = process.env.NOTIFY_EMAIL || 'admin@sabelcustomersuccess.com';
 const SLACK  = process.env.SLACK_WEBHOOK_URL;
+const ADMIN_URL = process.env.READINESS_ADMIN_URL || 'https://sabel-intercom.github.io/Intake-forms/SabelReadinessAdmin.html';
 
 /* ---------- Upstash helpers ---------- */
 async function redisGet(key) {
@@ -59,6 +63,12 @@ async function redisSet(key, value) {
     method: 'POST',
     headers: { Authorization: `Bearer ${TOKEN}`, 'Content-Type': 'text/plain' },
     body: typeof value === 'string' ? value : JSON.stringify(value)
+  });
+  return r.json();
+}
+async function redisDel(key) {
+  const r = await fetch(`${BASE}/del/${encodeURIComponent(key)}`, {
+    method: 'POST', headers: { Authorization: `Bearer ${TOKEN}` }
   });
   return r.json();
 }
@@ -187,32 +197,38 @@ ${report}
 }
 
 async function sendSlack(sub, id) {
-  if (!SLACK) return { sent: false };
+  if (!SLACK) return { sent: false, reason: 'SLACK_WEBHOOK_URL not set' };
   const s = sub.summary || {};
-  const flags = attention(sub).filter(f => f.status === 'red').slice(0, 6);
-  let text = `:clipboard: *Readiness check completed* — *${sub.client || 'Unknown client'}*\n` +
-    `${sub.contactName || ''} <${sub.contactEmail || ''}>\n` +
-    `${sub.projectType || ''}\nReady ${s.green || 0} · In progress ${s.amber || 0} · Not started ${s.red || 0} · N/A ${s.na || 0} · Unanswered ${s.unanswered || 0}\n` +
-    `Ref \`${id}\``;
-  if (flags.length) {
-    text += `\n\n*Not started:*\n` + flags.map(f => `• ${f.question}`).join('\n');
-  }
+  const all = attention(sub);
+  const reds = all.filter(f => f.status === 'red');
+  const ambers = all.filter(f => f.status === 'amber');
+  const link = `${ADMIN_URL}?id=${encodeURIComponent(id)}`;
+  const line = f => `• ${f.question}` +
+    (f.owner || f.dueBy ? ` _(${[f.owner, f.dueBy ? 'by ' + f.dueBy : ''].filter(Boolean).join(', ')})_` : '');
+  let text = `:clipboard: *Readiness check completed — ${sub.client || 'Unknown client'}*\n` +
+    `${sub.contactName || ''} <${sub.contactEmail || ''}>` + (sub.projectType ? ` · ${sub.projectType}` : '') + `\n` +
+    `Ready ${s.green || 0} · In progress ${s.amber || 0} · Not started ${s.red || 0} · N/A ${s.na || 0} · Unanswered ${s.unanswered || 0}\n` +
+    `<${link}|Open the full report>`;
+  if (reds.length) text += `\n\n*Not started (${reds.length}):*\n` + reds.slice(0, 10).map(line).join('\n') + (reds.length > 10 ? `\n… and ${reds.length - 10} more` : '');
+  if (ambers.length) text += `\n\n*In progress (${ambers.length}):*\n` + ambers.slice(0, 10).map(line).join('\n') + (ambers.length > 10 ? `\n… and ${ambers.length - 10} more` : '');
+  if (!all.length) text += `\n\nNothing flagged. :white_check_mark:`;
+  if (sub.otherNotes) text += `\n\n*Anything else:* ${String(sub.otherNotes).slice(0, 400)}`;
   try {
-    await fetch(SLACK, {
+    const r = await fetch(SLACK, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text })
+      body: JSON.stringify({ text, unfurl_links: false })
     });
-    return { sent: true };
+    return { sent: r.ok, reason: r.ok ? undefined : 'slack ' + r.status };
   } catch (e) {
-    return { sent: false };
+    return { sent: false, reason: String(e) };
   }
 }
 
 /* ---------- handler ---------- */
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,DELETE,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
@@ -240,6 +256,17 @@ export default async function handler(req, res) {
       }
       const index = parse(await redisGet('readiness:index')) || [];
       return res.status(200).json({ count: index.length, submissions: index });
+    }
+
+    /* ---- remove: admin page, for test entries and duplicates ---- */
+    if (req.method === 'DELETE') {
+      if (!ADMIN) return res.status(503).json({ error: 'READINESS_ADMIN_TOKEN not configured' });
+      if (req.query.token !== ADMIN) return res.status(401).json({ error: 'unauthorised' });
+      if (!req.query.id) return res.status(400).json({ error: 'missing id' });
+      const index = (parse(await redisGet('readiness:index')) || []).filter(s => s.id !== req.query.id);
+      await redisSet('readiness:index', JSON.stringify(index));
+      await redisDel('readiness:sub:' + req.query.id);
+      return res.status(200).json({ ok: true, count: index.length });
     }
 
     /* ---- write: the client's submit ---- */
@@ -271,7 +298,7 @@ export default async function handler(req, res) {
       const mail = await sendEmail(sub, id, report);
       const slack = await sendSlack(sub, id);
 
-      return res.status(200).json({ ok: true, id, emailed: mail.sent, slacked: slack.sent });
+      return res.status(200).json({ ok: true, id, emailed: mail.sent, emailReason: mail.reason, slacked: slack.sent, slackReason: slack.reason });
     }
 
     return res.status(405).json({ error: 'method not allowed' });
