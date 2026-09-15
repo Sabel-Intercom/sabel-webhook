@@ -51,6 +51,7 @@ const ALLOWED_KEYS = [
   'skycity-tracker-v1',
   'migration-intake-clevercards-v1',
   'migration-intake-soundingboard-v1',
+  'released-remediation-tracker-v1',
 ];
 
 // -------------------------------------------------------------
