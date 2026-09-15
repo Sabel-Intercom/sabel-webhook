@@ -1,7 +1,7 @@
 import { Redis } from '@upstash/redis';
 const redis = Redis.fromEnv();
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// ALLOWED_KEYS â€” add a new entry here every time a tracker is
+// -------------------------------------------------------------
+// ALLOWED_KEYS - add a new entry here every time a tracker is
 // deployed. Trackers will fail safe (404) if their key isn't
 // in this list, which stops typos from corrupting shared state.
 //
@@ -9,10 +9,10 @@ const redis = Redis.fromEnv();
 // every POST must carry that token (header `X-Tracker-Token`,
 // or `token` in the JSON body for older form-style posts).
 // While the env var is unset the API behaves exactly as before
-// (open writes, with a console.warn) â€” set the env var only
+// (open writes, with a console.warn) - set the env var only
 // AFTER every tracker/portal frontend has been updated to send
 // the token, so live saves never break mid-rollout.
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// -------------------------------------------------------------
 const ALLOWED_KEYS = [
   'raiz-tracker-v1',
   'huuuge-tracker-v1',
@@ -27,9 +27,9 @@ const ALLOWED_KEYS = [
   'bts-usa-tracker-v1',
   'yfood-tracker-v1',
   'flkitover-tracker-v1',
-  'client-portal-v1',                // â† Client Onboarding/Offboarding Portal (whole-portal state)
-  'thegivingmovement-tracker-v1',    // â† The Giving Movement project tracker
-  'gps-insight-tracker-v1',          // â† GPS Insight project tracker
+  'client-portal-v1',                // <- Client Onboarding/Offboarding Portal (whole-portal state)
+  'thegivingmovement-tracker-v1',    // <- The Giving Movement project tracker
+  'gps-insight-tracker-v1',          // <- GPS Insight project tracker
   'cronos-tracker-v1',
   'tulka-tracker-v1',
   'sabel-weekly-notes-v1',
@@ -39,13 +39,13 @@ const ALLOWED_KEYS = [
   'soundingboard-tracker-v1',
   'sabel-client-info-v1',
   'eugenelabs-tracker-v1',
-  'sabel-hours-v1',                  // â† internal hours tracker + menu bar widget
+  'sabel-hours-v1',                  // <- internal hours tracker + menu bar widget
   'synchronest-tracker-v1',
-  'sabel-allhands-v1',                // â† Call capture, shared across the team
+  'sabel-allhands-v1',                // <- Call capture, shared across the team
   'clevercards-tracker-v1',
   'cheekykiwitravel-tracker-v1',
   'shiftmove-tracker-v1',
-  'sabel-migration-watch-v1',   // â† Nikki's internal migration desk
+  'sabel-migration-watch-v1',   // <- Nikki's internal migration desk
   'sabel-kickoff-v1',
   'richard-board-v1',
   'skycity-tracker-v1',
@@ -53,7 +53,7 @@ const ALLOWED_KEYS = [
   'migration-intake-soundingboard-v1',
 ];
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// -------------------------------------------------------------
 // SLACK NOTIFICATIONS (optional).
 //
 // On each save we diff the incoming state against what is currently
@@ -70,7 +70,7 @@ const ALLOWED_KEYS = [
 //
 // Set SLACK_WEBHOOK_URL in Vercel env vars to enable. Without it, saves
 // behave exactly as before. Notification failures never block a save.
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// -------------------------------------------------------------
 const SLACK = process.env.SLACK_WEBHOOK_URL;
 
 // Newly-Complete CLIENT tasks between the stored state and the incoming
@@ -104,7 +104,7 @@ async function notifySlack(key, items) {
   if (!SLACK || !items.length) return;
   const lines = items.map(i =>
     `:white_check_mark: *${i.owner || 'Client'}* completed: "${i.title}"` +
-    (i.week ? ` Â· ${i.week}` : '') + (i.pillar ? ` Â· ${i.pillar}` : ''));
+    (i.week ? ` | ${i.week}` : '') + (i.pillar ? ` | ${i.pillar}` : ''));
   const text = `Client progress on \`${key}\`:\n` + lines.join('\n');
   try {
     await fetch(SLACK, {
@@ -115,7 +115,7 @@ async function notifySlack(key, items) {
   } catch (e) { /* notifications must never block saves */ }
 }
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// -------------------------------------------------------------
 // MIGRATION INTAKE SUBMISSIONS (optional).
 //
 // The migration intake forms save their whole state to a
@@ -132,7 +132,7 @@ async function notifySlack(key, items) {
 //   INTAKE_NOTIFY_EMAIL       comma-separated recipients.
 //                             Falls back to NOTIFY_EMAIL, then admin@sabelcustomersuccess.com
 //   RESEND_FROM / NOTIFY_FROM verified Resend sender, as in the other routes
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// -------------------------------------------------------------
 const INTAKE_SLACK = process.env.INTAKE_SLACK_WEBHOOK_URL || process.env.SLACK_WEBHOOK_URL;
 const RESEND_KEY = process.env.RESEND_API_KEY;
 const INTAKE_TO = (process.env.INTAKE_NOTIFY_EMAIL || process.env.NOTIFY_EMAIL || 'admin@sabelcustomersuccess.com')
@@ -165,7 +165,7 @@ async function notifyIntake(key, s) {
   const owner = [F.co_name, F.co_email ? `<${F.co_email}>` : ''].filter(Boolean).join(' ');
   const when = new Date(s.stamp).toUTCString();
   const verb = s.resubmitted ? 'resubmitted' : 'submitted';
-  const rows = Object.entries(s.T).map(([k, v]) => `${k} ${Array.isArray(v) ? v.length : 0}`).join(' Â· ');
+  const rows = Object.entries(s.T).map(([k, v]) => `${k} ${Array.isArray(v) ? v.length : 0}`).join(' | ');
 
   if (INTAKE_SLACK) {
     const text = `:inbox_tray: *Migration intake ${verb}: ${client}*\n` +
@@ -228,8 +228,8 @@ export default async function handler(req, res) {
   if (req.method === 'GET') {
     try {
       const data = await redis.get(key);
-      // Return the state under BOTH `data` (object â€” read by the dashboard and
-      // newer trackers) and `value` (JSON string â€” read by V2 skill trackers),
+      // Return the state under BOTH `data` (object - read by the dashboard and
+      // newer trackers) and `value` (JSON string - read by V2 skill trackers),
       // so every frontend can load regardless of which field it expects.
       return res.status(200).json({
         ok: true,
@@ -243,7 +243,7 @@ export default async function handler(req, res) {
   }
   if (req.method === 'POST') {
     try {
-      // â”€â”€ Write-token gate (zero-downtime rollout) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+      // -- Write-token gate (zero-downtime rollout) --------------
       // Enforced ONLY when TRACKER_WRITE_TOKEN is set in the env.
       // Token is accepted from the X-Tracker-Token header (preferred)
       // or a `token` field in the JSON body (old-style form posts).
@@ -255,7 +255,7 @@ export default async function handler(req, res) {
         }
       } else {
         console.warn(
-          `tracker: unauthenticated write to "${key}" â€” TRACKER_WRITE_TOKEN not set, write gate is OFF`
+          `tracker: unauthenticated write to "${key}" - TRACKER_WRITE_TOKEN not set, write gate is OFF`
         );
       }
       // Accept the payload as { data } (newer trackers), { value } (V2 skill
@@ -293,7 +293,7 @@ export default async function handler(req, res) {
         console.error('tracker: completion diff failed (save unaffected):', diffErr);
       }
       await redis.set(key, payload);
-      // Audit stamp â€” stored under a parallel meta:<key> so the tracker
+      // Audit stamp - stored under a parallel meta:<key> so the tracker
       // payload shape (read back raw by every frontend) is never altered.
       // meta:* keys are not in ALLOWED_KEYS, so they are unreachable via this API.
       try {
