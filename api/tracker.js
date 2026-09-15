@@ -1,7 +1,7 @@
 import { Redis } from '@upstash/redis';
 const redis = Redis.fromEnv();
-// ─────────────────────────────────────────────────────────────
-// ALLOWED_KEYS — add a new entry here every time a tracker is
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ALLOWED_KEYS â€” add a new entry here every time a tracker is
 // deployed. Trackers will fail safe (404) if their key isn't
 // in this list, which stops typos from corrupting shared state.
 //
@@ -9,10 +9,10 @@ const redis = Redis.fromEnv();
 // every POST must carry that token (header `X-Tracker-Token`,
 // or `token` in the JSON body for older form-style posts).
 // While the env var is unset the API behaves exactly as before
-// (open writes, with a console.warn) — set the env var only
+// (open writes, with a console.warn) â€” set the env var only
 // AFTER every tracker/portal frontend has been updated to send
 // the token, so live saves never break mid-rollout.
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const ALLOWED_KEYS = [
   'raiz-tracker-v1',
   'huuuge-tracker-v1',
@@ -27,9 +27,9 @@ const ALLOWED_KEYS = [
   'bts-usa-tracker-v1',
   'yfood-tracker-v1',
   'flkitover-tracker-v1',
-  'client-portal-v1',                // ← Client Onboarding/Offboarding Portal (whole-portal state)
-  'thegivingmovement-tracker-v1',    // ← The Giving Movement project tracker
-  'gps-insight-tracker-v1',          // ← GPS Insight project tracker
+  'client-portal-v1',                // â† Client Onboarding/Offboarding Portal (whole-portal state)
+  'thegivingmovement-tracker-v1',    // â† The Giving Movement project tracker
+  'gps-insight-tracker-v1',          // â† GPS Insight project tracker
   'cronos-tracker-v1',
   'tulka-tracker-v1',
   'sabel-weekly-notes-v1',
@@ -39,13 +39,13 @@ const ALLOWED_KEYS = [
   'soundingboard-tracker-v1',
   'sabel-client-info-v1',
   'eugenelabs-tracker-v1',
-  'sabel-hours-v1',                  // ← internal hours tracker + menu bar widget
+  'sabel-hours-v1',                  // â† internal hours tracker + menu bar widget
   'synchronest-tracker-v1',
-  'sabel-allhands-v1',                // ← Call capture, shared across the team
+  'sabel-allhands-v1',                // â† Call capture, shared across the team
   'clevercards-tracker-v1',
   'cheekykiwitravel-tracker-v1',
   'shiftmove-tracker-v1',
-  'sabel-migration-watch-v1',   // ← Nikki's internal migration desk
+  'sabel-migration-watch-v1',   // â† Nikki's internal migration desk
   'sabel-kickoff-v1',
   'richard-board-v1',
   'skycity-tracker-v1',
@@ -53,7 +53,7 @@ const ALLOWED_KEYS = [
   'migration-intake-soundingboard-v1',
 ];
 
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // SLACK NOTIFICATIONS (optional).
 //
 // On each save we diff the incoming state against what is currently
@@ -70,7 +70,7 @@ const ALLOWED_KEYS = [
 //
 // Set SLACK_WEBHOOK_URL in Vercel env vars to enable. Without it, saves
 // behave exactly as before. Notification failures never block a save.
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const SLACK = process.env.SLACK_WEBHOOK_URL;
 
 // Newly-Complete CLIENT tasks between the stored state and the incoming
@@ -104,7 +104,7 @@ async function notifySlack(key, items) {
   if (!SLACK || !items.length) return;
   const lines = items.map(i =>
     `:white_check_mark: *${i.owner || 'Client'}* completed: "${i.title}"` +
-    (i.week ? ` · ${i.week}` : '') + (i.pillar ? ` · ${i.pillar}` : ''));
+    (i.week ? ` Â· ${i.week}` : '') + (i.pillar ? ` Â· ${i.pillar}` : ''));
   const text = `Client progress on \`${key}\`:\n` + lines.join('\n');
   try {
     await fetch(SLACK, {
@@ -113,6 +113,101 @@ async function notifySlack(key, items) {
       body: JSON.stringify({ text })
     });
   } catch (e) { /* notifications must never block saves */ }
+}
+
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// MIGRATION INTAKE SUBMISSIONS (optional).
+//
+// The migration intake forms save their whole state to a
+// `migration-intake-<client>-v1` key on every change. Pressing Submit
+// stamps F.__submitted. When a save carries a __submitted stamp that
+// differs from the stored one, send ONE Slack message and ONE email.
+// Later autosaves keep the same stamp, so they never re-notify. Pressing
+// Submit again stamps a new time and notifies again, marked "resubmitted".
+//
+// Env vars (all optional, both channels are best effort):
+//   INTAKE_SLACK_WEBHOOK_URL  Slack incoming webhook for these alerts.
+//                             Falls back to SLACK_WEBHOOK_URL.
+//   RESEND_API_KEY            already used by readiness.js / quote-notify.js
+//   INTAKE_NOTIFY_EMAIL       comma-separated recipients.
+//                             Falls back to NOTIFY_EMAIL, then admin@sabelcustomersuccess.com
+//   RESEND_FROM / NOTIFY_FROM verified Resend sender, as in the other routes
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+const INTAKE_SLACK = process.env.INTAKE_SLACK_WEBHOOK_URL || process.env.SLACK_WEBHOOK_URL;
+const RESEND_KEY = process.env.RESEND_API_KEY;
+const INTAKE_TO = (process.env.INTAKE_NOTIFY_EMAIL || process.env.NOTIFY_EMAIL || 'admin@sabelcustomersuccess.com')
+  .split(',').map(s => s.trim()).filter(Boolean);
+const INTAKE_FROM = process.env.RESEND_FROM
+  || (process.env.NOTIFY_FROM ? `Sabel Forms <${process.env.NOTIFY_FROM}>` : 'Sabel Forms <onboarding@resend.dev>');
+const PAGES = 'https://sabel-intercom.github.io/Intake-forms/';
+// Client-specific copies of the form. Anything not listed opens the master with ?client=.
+const INTAKE_PAGES = {
+  clevercards: 'SabelMigrationIntake_CleverCards.html',
+  soundingboard: 'SabelMigrationIntake_SoundingBoard.html',
+};
+
+function intakeSubmission(key, prev, next) {
+  const m = /^migration-intake-([a-z0-9-]+)-v1$/.exec(key);
+  if (!m || !next || typeof next !== 'object' || !next.F) return null;
+  const stamp = next.F.__submitted;
+  if (!stamp) return null;
+  const before = prev && typeof prev === 'object' && prev.F ? prev.F.__submitted : undefined;
+  if (before === stamp) return null;
+  const slug = m[1];
+  const page = INTAKE_PAGES[slug] ? `${PAGES}${INTAKE_PAGES[slug]}#admin` : `${PAGES}SabelMigrationIntake.html?client=${slug}#admin`;
+  return { slug, stamp, resubmitted: Boolean(before), F: next.F, T: next.T || {}, page };
+}
+
+async function notifyIntake(key, s) {
+  if (!s) return;
+  const F = s.F;
+  const client = F.client || s.slug;
+  const owner = [F.co_name, F.co_email ? `<${F.co_email}>` : ''].filter(Boolean).join(' ');
+  const when = new Date(s.stamp).toUTCString();
+  const verb = s.resubmitted ? 'resubmitted' : 'submitted';
+  const rows = Object.entries(s.T).map(([k, v]) => `${k} ${Array.isArray(v) ? v.length : 0}`).join(' Â· ');
+
+  if (INTAKE_SLACK) {
+    const text = `:inbox_tray: *Migration intake ${verb}: ${client}*\n` +
+      (owner ? `Client owner: ${owner}\n` : '') +
+      (F.target_golive ? `Target go-live: ${F.target_golive}\n` : '') +
+      `Submitted ${when}\n<${s.page}|Open the form and export the answers>`;
+    try {
+      await fetch(INTAKE_SLACK, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, unfurl_links: false }) });
+    } catch (e) { /* notifications must never block saves */ }
+  }
+
+  if (RESEND_KEY) {
+    const answers = Object.keys(F)
+      .filter(k => !k.startsWith('__') && F[k] !== '' && F[k] !== false && F[k] != null)
+      .map(k => `  ${k}: ${F[k] === true ? 'Yes' : F[k]}`).join('\n');
+    const text =
+`${client} has ${verb} their migration intake form.
+
+Client owner:   ${owner || '(not given)'}
+Target go-live: ${F.target_golive || '(not given)'}
+Submitted:      ${when}
+Mapping rows:   ${rows || 'none'}
+
+Open the form to export the full answers (Excel, CSV or JSON):
+${s.page}
+
+Raw answers (field ids):
+${answers || '  (none)'}
+`;
+    try {
+      await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${RESEND_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          from: INTAKE_FROM, to: INTAKE_TO,
+          reply_to: F.co_email || undefined,
+          subject: `Migration intake ${verb}: ${client}`, text
+        })
+      });
+    } catch (e) { /* notifications must never block saves */ }
+  }
 }
 
 export default async function handler(req, res) {
@@ -133,8 +228,8 @@ export default async function handler(req, res) {
   if (req.method === 'GET') {
     try {
       const data = await redis.get(key);
-      // Return the state under BOTH `data` (object — read by the dashboard and
-      // newer trackers) and `value` (JSON string — read by V2 skill trackers),
+      // Return the state under BOTH `data` (object â€” read by the dashboard and
+      // newer trackers) and `value` (JSON string â€” read by V2 skill trackers),
       // so every frontend can load regardless of which field it expects.
       return res.status(200).json({
         ok: true,
@@ -148,7 +243,7 @@ export default async function handler(req, res) {
   }
   if (req.method === 'POST') {
     try {
-      // ── Write-token gate (zero-downtime rollout) ──────────────
+      // â”€â”€ Write-token gate (zero-downtime rollout) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       // Enforced ONLY when TRACKER_WRITE_TOKEN is set in the env.
       // Token is accepted from the X-Tracker-Token header (preferred)
       // or a `token` field in the JSON body (old-style form posts).
@@ -160,7 +255,7 @@ export default async function handler(req, res) {
         }
       } else {
         console.warn(
-          `tracker: unauthenticated write to "${key}" — TRACKER_WRITE_TOKEN not set, write gate is OFF`
+          `tracker: unauthenticated write to "${key}" â€” TRACKER_WRITE_TOKEN not set, write gate is OFF`
         );
       }
       // Accept the payload as { data } (newer trackers), { value } (V2 skill
@@ -189,14 +284,16 @@ export default async function handler(req, res) {
       // Diff BEFORE writing so we can detect newly-Complete client tasks.
       // Any failure here must never block the save.
       let notifyItems = [];
+      let intake = null;
       try {
         const prev = await redis.get(key);
         notifyItems = clientCompletions(prev, payload);
+        intake = intakeSubmission(key, prev, payload);
       } catch (diffErr) {
         console.error('tracker: completion diff failed (save unaffected):', diffErr);
       }
       await redis.set(key, payload);
-      // Audit stamp — stored under a parallel meta:<key> so the tracker
+      // Audit stamp â€” stored under a parallel meta:<key> so the tracker
       // payload shape (read back raw by every frontend) is never altered.
       // meta:* keys are not in ALLOWED_KEYS, so they are unreachable via this API.
       try {
@@ -210,7 +307,8 @@ export default async function handler(req, res) {
       // Fire Slack notifications AFTER the write is durable. Awaited because
       // serverless functions freeze after the response is sent.
       await notifySlack(key, notifyItems);
-      return res.status(200).json({ ok: true, notified: notifyItems.length });
+      await notifyIntake(key, intake);
+      return res.status(200).json({ ok: true, notified: notifyItems.length, intakeSubmitted: Boolean(intake) });
     } catch (err) {
       console.error('Redis SET error:', err);
       return res.status(500).json({ ok: false, error: err.message });
