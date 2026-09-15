@@ -49,6 +49,8 @@ const ALLOWED_KEYS = [
   'sabel-kickoff-v1',
   'richard-board-v1',
   'skycity-tracker-v1',
+  'migration-intake-clevercards-v1',
+  'migration-intake-soundingboard-v1',
 ];
 
 // ─────────────────────────────────────────────────────────────
