@@ -53,7 +53,7 @@ const ALLOWED_KEYS = [
   'migration-intake-soundingboard-v1',
   'released-remediation-tracker-v1',
   'migration-intake-shiftmove-v1',
-  "readiness-inputs-v1",
+  'readiness-inputs-v1',
 ];
 
 // -------------------------------------------------------------
