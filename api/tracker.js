@@ -54,6 +54,7 @@ const ALLOWED_KEYS = [
   'released-remediation-tracker-v1',
   'migration-intake-shiftmove-v1',
   'readiness-inputs-v1',
+  'migration-intake-democo-v1',
 ];
 
 // -------------------------------------------------------------
