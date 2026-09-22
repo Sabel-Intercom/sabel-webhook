@@ -55,6 +55,7 @@ const ALLOWED_KEYS = [
   'migration-intake-shiftmove-v1',
   'readiness-inputs-v1',
   'migration-intake-democo-v1',
+  'elmo-tracker-v1',
 ];
 
 // -------------------------------------------------------------
