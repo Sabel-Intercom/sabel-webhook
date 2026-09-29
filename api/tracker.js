@@ -58,6 +58,7 @@ const ALLOWED_KEYS = [
   'elmo-tracker-v1',
   'sabel-clientmeta-v1',
   'migration-intake-elmo-v1',
+  'democo-tracker-v1',
 ];
 
 // -------------------------------------------------------------
