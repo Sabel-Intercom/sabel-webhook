@@ -219,6 +219,30 @@ ${answers || '  (none)'}
   }
 }
 
+// -------------------------------------------------------------
+// STALE-BUILD GUARD.
+//
+// Every tracker page stamps its build (BUILD_V, a YYYYMMDDHHMM number)
+// into the state it saves. A page from an older build throws the saved
+// state away on load and shows its own built-in plan, so its next
+// autosave would replace the live plan with an out-of-date one, with no
+// conflict prompt. That is how Shiftmove lost its two-cutover dates on
+// 30 Sep 2026 (an old copy opened from Drive).
+//
+// So: refuse a save whose buildV is OLDER than the one already stored.
+// Same build or newer saves as before. States without a numeric buildV
+// on either side (legacy trackers, portal, forms, hours) are untouched.
+// To roll a tracker back to an older build on purpose, clear or re-save
+// its state from the newer page first.
+// -------------------------------------------------------------
+function staleBuild(prev, next) {
+  if (!prev || !next || typeof prev !== 'object' || typeof next !== 'object') return false;
+  const a = Number(prev.buildV), b = Number(next.buildV);
+  if (prev.buildV === undefined || next.buildV === undefined) return false;
+  if (!Number.isFinite(a) || !Number.isFinite(b)) return false;
+  return b < a;
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -294,12 +318,21 @@ export default async function handler(req, res) {
       // Any failure here must never block the save.
       let notifyItems = [];
       let intake = null;
+      let stale = null;
       try {
         const prev = await redis.get(key);
+        if (staleBuild(prev, payload)) stale = { stored: prev.buildV, sent: payload.buildV };
         notifyItems = clientCompletions(prev, payload);
         intake = intakeSubmission(key, prev, payload);
       } catch (diffErr) {
         console.error('tracker: completion diff failed (save unaffected):', diffErr);
+      }
+      if (stale) {
+        console.warn(`tracker: refused stale-build save to "${key}" (stored ${stale.stored}, sent ${stale.sent})`);
+        return res.status(409).json({
+          ok: false,
+          error: `This copy of the tracker is out of date (build ${stale.sent}, live build ${stale.stored}). Nothing was saved. Open the tracker from its live link.`,
+        });
       }
       await redis.set(key, payload);
       // Audit stamp - stored under a parallel meta:<key> so the tracker
