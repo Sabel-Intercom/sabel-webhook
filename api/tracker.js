@@ -60,6 +60,7 @@ const ALLOWED_KEYS = [
   'migration-intake-elmo-v1',
   'democo-tracker-v1',
   'readiness-elmo-v1',
+  'sabel-tasklist-v1',
 ];
 
 // -------------------------------------------------------------
