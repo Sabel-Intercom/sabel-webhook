@@ -61,6 +61,7 @@ const ALLOWED_KEYS = [
   'democo-tracker-v1',
   'readiness-elmo-v1',
   'sabel-tasklist-v1',
+  'readiness-skycity-v1',
 ];
 
 // -------------------------------------------------------------
