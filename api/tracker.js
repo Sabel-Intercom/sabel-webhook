@@ -62,6 +62,7 @@ const ALLOWED_KEYS = [
   'readiness-elmo-v1',
   'sabel-tasklist-v1',
   'readiness-skycity-v1',
+  'migration-intake-yfood-v1',
 ];
 
 // -------------------------------------------------------------
