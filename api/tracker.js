@@ -64,6 +64,7 @@ const ALLOWED_KEYS = [
   'readiness-skycity-v1',
   'migration-intake-yfood-v1',
   'cookaborough-tracker-v1',
+  'readiness-cookaborough-v1',
 ];
 
 // -------------------------------------------------------------
