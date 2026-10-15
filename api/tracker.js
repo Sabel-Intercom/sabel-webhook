@@ -63,6 +63,7 @@ const ALLOWED_KEYS = [
   'sabel-tasklist-v1',
   'readiness-skycity-v1',
   'migration-intake-yfood-v1',
+  'cookaborough-tracker-v1',
 ];
 
 // -------------------------------------------------------------
