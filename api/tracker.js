@@ -65,6 +65,9 @@ const ALLOWED_KEYS = [
   'migration-intake-yfood-v1',
   'cookaborough-tracker-v1',
   'readiness-cookaborough-v1',
+  'rms-tracker-v1',
+  'readiness-rms-v1',
+  'migration-intake-rms-v1',
 ];
 
 // -------------------------------------------------------------
