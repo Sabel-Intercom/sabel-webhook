@@ -68,6 +68,9 @@ const ALLOWED_KEYS = [
   'rms-tracker-v1',
   'readiness-rms-v1',
   'migration-intake-rms-v1',
+  'smokeball-tracker-v1',
+  'readiness-smokeball-v1',
+  'migration-intake-smokeball-v1',
 ];
 
 // -------------------------------------------------------------
