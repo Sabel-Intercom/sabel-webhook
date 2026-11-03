@@ -71,6 +71,8 @@ const ALLOWED_KEYS = [
   'smokeball-tracker-v1',
   'readiness-smokeball-v1',
   'migration-intake-smokeball-v1',
+  'kinatico-tracker-v1',
+  'readiness-kinatico-v1',
 ];
 
 // -------------------------------------------------------------
