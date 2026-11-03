@@ -256,10 +256,20 @@ function staleBuild(prev, next) {
   return b < a;
 }
 
+// -------------------------------------------------------------
+// KICK-OFF SECURITY (3 Nov 2026).
+// Each client's kick-off form saves to its own key with a random part, so
+// keys are NOT listed in this public file. TEAM_ONLY_KEYS cannot be read or
+// written without the team passcode: if KICKOFF_TEAM_TOKEN is not set in
+// Vercel they are refused for everyone, never left open.
+// -------------------------------------------------------------
+const KICKOFF_CLIENT_KEY = /^kickoff-[a-z0-9-]{1,60}-[a-f0-9]{16}-v1$/;
+const TEAM_ONLY_KEYS = ['sabel-kickoff-v1'];
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Tracker-Token');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Tracker-Token, X-Team-Token');
   if (req.method === 'OPTIONS') return res.status(200).end();
   // Accept the key from the query string (?key=) OR the POST body {key},
   // so both the older and newer tracker styles work.
@@ -268,8 +278,14 @@ export default async function handler(req, res) {
   if (!key) {
     return res.status(400).json({ ok: false, error: 'Missing key (query ?key= or body { key })' });
   }
-  if (!ALLOWED_KEYS.includes(key)) {
+  if (!ALLOWED_KEYS.includes(key) && !KICKOFF_CLIENT_KEY.test(key)) {
     return res.status(404).json({ ok: false, error: `Unknown tracker key: ${key}` });
+  }
+  if (TEAM_ONLY_KEYS.includes(key)) {
+    const teamToken = process.env.KICKOFF_TEAM_TOKEN;
+    if (!teamToken || req.headers['x-team-token'] !== teamToken) {
+      return res.status(401).json({ ok: false, error: 'Team passcode required' });
+    }
   }
   if (req.method === 'GET') {
     try {
