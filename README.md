@@ -109,3 +109,38 @@ vercel dev
 ```
 
 Then POST to `http://localhost:3000/api/webhook` with a Formspree-style JSON body to test locally.
+
+---
+
+## Tracker store: per-key locks
+
+`/api/tracker` stores each tracker, hub and form under a key in Upstash Redis. By default a key is open: anyone who knows it can read and write. A key can be **locked** so it answers only to the team passcode or to that client's own token.
+
+| Request | Open key | Locked key |
+|---|---|---|
+| `GET/POST /api/tracker?key=…` with no headers | works | `401 { locked: true }` |
+| … with `X-Client-Token: <that key's token>` | works | works |
+| … with `X-Team-Token: <KICKOFF_TEAM_TOKEN>` | works | works |
+
+Locks are managed through `/api/tracker-lock`, which always needs `X-Team-Token`:
+
+```
+GET    /api/tracker-lock                 list locked keys
+GET    /api/tracker-lock?key=<k>         { locked, setAt, label }
+POST   /api/tracker-lock  { key, token?, label? }
+                                         lock <k>. With no token, one is generated and
+                                         returned ONCE; only its SHA-256 is stored.
+DELETE /api/tracker-lock?key=<k>         clear the lock
+```
+
+Switching a client over:
+
+1. `POST /api/tracker-lock { key: "<client>-tracker-v1", label: "<Client> hub" }` with the team passcode. Copy the `token` from the response.
+2. Rebuild the client's hub with that token sent as `X-Client-Token` on every `/api/tracker` call (reads and saves, including the forms inside the hub). Publish it behind Cloudflare Access.
+3. Repeat for the client's other keys (`readiness-<client>-v1`, `migration-intake-<client>-v1`).
+
+Rotating a token is step 1 again with no token: the old one stops the moment the new hash lands, so rebuild first. Keys with no lock are untouched, so clients move one at a time.
+
+Team pages and automations that read a locked key (Internal Ops, Task Hub, Ops Hub, Fly sync, SwiftBar) must send `X-Team-Token`.
+
+Tests: `npm test` (no Upstash needed; Redis is mocked in memory).
