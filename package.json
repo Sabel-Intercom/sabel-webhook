@@ -11,5 +11,8 @@
   },
   "engines": {
     "node": "24.x"
+  },
+  "scripts": {
+    "test": "node --import ./test/mock-redis.mjs --test \"test/**/*.test.mjs\""
   }
 }

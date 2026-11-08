@@ -1,4 +1,5 @@
 import { Redis } from '@upstash/redis';
+import { lockKey, authorize, isTeamRequest } from '../lib/tracker-lock.js';
 const redis = Redis.fromEnv();
 // -------------------------------------------------------------
 // ALLOWED_KEYS - add a new entry here every time a tracker is
@@ -13,7 +14,7 @@ const redis = Redis.fromEnv();
 // AFTER every tracker/portal frontend has been updated to send
 // the token, so live saves never break mid-rollout.
 // -------------------------------------------------------------
-const ALLOWED_KEYS = [
+export const ALLOWED_KEYS = [
   'raiz-tracker-v1',
   'huuuge-tracker-v1',
   'cirqul-tracker-v1',
@@ -263,13 +264,24 @@ function staleBuild(prev, next) {
 // written without the team passcode: if KICKOFF_TEAM_TOKEN is not set in
 // Vercel they are refused for everyone, never left open.
 // -------------------------------------------------------------
-const KICKOFF_CLIENT_KEY = /^kickoff-[a-z0-9-]{1,60}-[a-f0-9]{16}-v1$/;
+export const KICKOFF_CLIENT_KEY = /^kickoff-[a-z0-9-]{1,60}-[a-f0-9]{16}-v1$/;
 const TEAM_ONLY_KEYS = ['sabel-kickoff-v1'];
+
+// -------------------------------------------------------------
+// PER-KEY LOCK (8 Nov 2026). See lib/tracker-lock.js.
+// If `lock:<key>` exists in Redis, every GET and POST on <key> must carry
+// the team passcode (X-Team-Token) or that key's client token
+// (X-Client-Token). Keys with no lock behave exactly as before. Locks are
+// set and cleared through /api/tracker-lock, team passcode only.
+// -------------------------------------------------------------
+export function isAllowedKey(key) {
+  return ALLOWED_KEYS.includes(key) || KICKOFF_CLIENT_KEY.test(key);
+}
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Tracker-Token, X-Team-Token');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Tracker-Token, X-Team-Token, X-Client-Token');
   if (req.method === 'OPTIONS') return res.status(200).end();
   // Accept the key from the query string (?key=) OR the POST body {key},
   // so both the older and newer tracker styles work.
@@ -278,14 +290,25 @@ export default async function handler(req, res) {
   if (!key) {
     return res.status(400).json({ ok: false, error: 'Missing key (query ?key= or body { key })' });
   }
-  if (!ALLOWED_KEYS.includes(key) && !KICKOFF_CLIENT_KEY.test(key)) {
+  if (!isAllowedKey(key)) {
     return res.status(404).json({ ok: false, error: `Unknown tracker key: ${key}` });
   }
-  if (TEAM_ONLY_KEYS.includes(key)) {
-    const teamToken = process.env.KICKOFF_TEAM_TOKEN;
-    if (!teamToken || req.headers['x-team-token'] !== teamToken) {
-      return res.status(401).json({ ok: false, error: 'Team passcode required' });
-    }
+  if (TEAM_ONLY_KEYS.includes(key) && !isTeamRequest(req)) {
+    return res.status(401).json({ ok: false, error: 'Team passcode required' });
+  }
+  // Lock check. A Redis failure here fails CLOSED: we never serve a key we
+  // could not confirm is unlocked.
+  let auth;
+  try {
+    const lock = await redis.get(lockKey(key));
+    auth = authorize({ lock, req });
+  } catch (err) {
+    console.error('tracker: lock lookup failed:', err);
+    return res.status(503).json({ ok: false, error: 'Could not check hub access. Try again.' });
+  }
+  if (!auth.allowed) {
+    console.warn(`tracker: refused "${key}" (${auth.reason})`);
+    return res.status(401).json({ ok: false, locked: true, error: 'This hub is locked. Open it from its live link.' });
   }
   if (req.method === 'GET') {
     try {
@@ -331,7 +354,7 @@ export default async function handler(req, res) {
       } else if (body.value !== undefined) {
         payload = body.value;
       } else {
-        const { key: _k, token: _t, ...rest } = body;
+        const { key: _k, token: _t, clientToken: _c, ...rest } = body;
         payload = Object.keys(rest).length ? rest : undefined;
       }
       // Reject empty saves: a POST of nothing/null must never overwrite state.
@@ -371,6 +394,7 @@ export default async function handler(req, res) {
         await redis.set(`meta:${key}`, {
           lastWrite: new Date().toISOString(),
           tokenPresent: Boolean(providedToken),
+          via: auth.via,
         });
       } catch (metaErr) {
         console.error('Redis meta SET error (write itself succeeded):', metaErr);
