@@ -275,8 +275,23 @@ const TEAM_ONLY_KEYS = ['sabel-kickoff-v1'];
 // set and cleared through /api/tracker-lock, team passcode only.
 // -------------------------------------------------------------
 export function isAllowedKey(key) {
-  return ALLOWED_KEYS.includes(key) || KICKOFF_CLIENT_KEY.test(key);
+  return ALLOWED_KEYS.includes(key) || KICKOFF_CLIENT_KEY.test(key) || READINESS_INPUTS_CLIENT_KEY.test(key);
 }
+
+// -------------------------------------------------------------
+// READINESS INPUTS, ONE KEY PER CLIENT (10 Nov 2026).
+// `readiness-inputs-<slug>-v1` holds one client's project inputs list and
+// confirmed access rows for the readiness form. <slug> is the same slug as
+// in that client's form key `readiness-<slug>-v1`. Matched by pattern, so a
+// new client needs no change here.
+//   READ:  follows the per-key lock like any other key.
+//   WRITE: team passcode only, locked or not. Only Sabel's internal pages
+//          and scripts publish these; a client token can read its own key
+//          but never write it.
+// The combined key `readiness-inputs-v1` stays in ALLOWED_KEYS and is not
+// matched by this pattern.
+// -------------------------------------------------------------
+export const READINESS_INPUTS_CLIENT_KEY = /^readiness-inputs-[a-z0-9](?:[a-z0-9-]{0,58}[a-z0-9])?-v1$/;
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -309,6 +324,10 @@ export default async function handler(req, res) {
   if (!auth.allowed) {
     console.warn(`tracker: refused "${key}" (${auth.reason})`);
     return res.status(401).json({ ok: false, locked: true, error: 'This hub is locked. Open it from its live link.' });
+  }
+  if (req.method === 'POST' && READINESS_INPUTS_CLIENT_KEY.test(key) && !isTeamRequest(req)) {
+    console.warn(`tracker: refused write to "${key}" (team only)`);
+    return res.status(401).json({ ok: false, error: 'Team passcode required' });
   }
   if (req.method === 'GET') {
     try {
