@@ -85,9 +85,20 @@ test('gate fails closed when KICKOFF_TEAM_TOKEN is unset', async () => {
   } finally { process.env.KICKOFF_TEAM_TOKEN = saved; }
 });
 
+test('gated answers are never cacheable by a shared cache, allowed or refused', async () => {
+  for (const [handler, query] of [[notion, {}], [notion, { kind: 'projects' }], [motion, {}], [feedback, { key: FB }]]) {
+    for (const headers of [TEAM, {}]) {
+      const r = await call(handler, { query, headers });
+      assert.equal(r.headers['Cache-Control'], 'private, no-store', `${query.kind || query.key || 'tasks'} ${r.status}`);
+      assert.equal(r.headers['Vary'], 'X-Team-Token');
+      assert.doesNotMatch(String(r.headers['Cache-Control']), /s-maxage|public/);
+    }
+  }
+});
+
 test('requireTeam returns a boolean and sends exactly one refusal', async () => {
   let sent = 0;
-  const res = { status() { return res; }, json() { sent++; } };
+  const res = { setHeader() {}, status() { return res; }, json() { sent++; } };
   assert.equal(requireTeam({ headers: {} }, res), false);
   assert.equal(sent, 1);
   assert.equal(requireTeam({ headers: TEAM }, res), true);

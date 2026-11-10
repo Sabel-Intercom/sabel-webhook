@@ -94,7 +94,9 @@ export default async function handler(req, res) {
       completedAt: t.completedTime || t.updatedTime || null,
     }));
 
-    res.setHeader('Cache-Control', 's-maxage=120');
+    // No shared caching: this answer is team only, and a CDN copy would be
+    // served to the next caller without the passcode. requireTeam() already
+    // set Cache-Control: private, no-store.
     // "scanned" = how many tasks Motion returned before filtering — useful for
     // diagnosing "count: 0" (scanned 0 = fetch problem; scanned > 0 = filter).
     return res.status(200).json({ ok: true, since: since, scanned: collected.length, count: out.length, tasks: out });
