@@ -30,6 +30,12 @@
 //   /api/notion?kind=projects    → contract/SOW detail per client (Client Contracts)
 // Both need sharing with the integration separately — sharing Tasks does not
 // share Projects. Connect the parent "Sabel Ops" page to cover both at once.
+//
+// TEAM ONLY (10 Nov 2026): this returns contract terms, contacts and task
+// lists for every client, so every GET needs the team passcode in
+// X-Team-Token. See lib/team-gate.js.
+import { requireTeam, TEAM_HEADERS } from '../lib/team-gate.js';
+
 const NOTION_DB = '3b6335ee-d1ea-81fa-86ff-e2c08605d805';       // Sabel Ops › Tasks
 const PROJECTS_DB = '3b6335ee-d1ea-81ff-b67c-f8ee42ec5bd0';     // Sabel Ops › Projects
 const NOTION_VERSION = '2022-06-28';
@@ -127,12 +133,13 @@ async function projects(token, res) {
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', TEAM_HEADERS);
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   if (req.method !== 'GET') {
     return res.status(405).json({ ok: false, error: 'Method not allowed' });
   }
+  if (!requireTeam(req, res)) return;
 
   const token = process.env.NOTION_TOKEN;
   if (!token) {

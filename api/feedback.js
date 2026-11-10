@@ -10,18 +10,31 @@ const redis = Redis.fromEnv();
 //
 // Optional instant Slack alert: set SLACK_FEEDBACK_WEBHOOK in Vercel env vars
 // (Slack > Apps > Incoming Webhooks) and every submission pings Slack immediately.
+//
+// SECURITY (10 Nov 2026):
+//   - Only the keys in FEEDBACK_KEYS are accepted. Before this, any key name
+//     worked, so anyone could read or append to any list in the store.
+//   - GET (reading what clients said) is TEAM ONLY: X-Team-Token, see
+//     lib/team-gate.js. POST stays open: clients submit the form signed out.
+//   - A submission must be a JSON object of at most MAX_ENTRY_BYTES.
+import { requireTeam, TEAM_HEADERS } from '../lib/team-gate.js';
+
+export const FEEDBACK_KEYS = ['sabel-feedback-v1'];
+export const MAX_ENTRY_BYTES = 20000;
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', TEAM_HEADERS);
 
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   if (req.method === 'GET') {
+    if (!requireTeam(req, res)) return;
     try {
       const key = req.query.key;
       if (!key) return res.status(400).json({ ok: false, error: 'No key provided' });
+      if (!FEEDBACK_KEYS.includes(key)) return res.status(404).json({ ok: false, error: 'Unknown feedback key' });
       const raw = await redis.lrange(key, 0, -1);
       let entries = raw.map(e => (typeof e === 'string' ? JSON.parse(e) : e));
       if (req.query.since) {
@@ -36,8 +49,11 @@ export default async function handler(req, res) {
 
   if (req.method === 'POST') {
     try {
-      const { key, entry } = req.body;
+      const { key, entry } = req.body || {};
       if (!key || !entry) return res.status(400).json({ ok: false, error: 'Missing key or entry' });
+      if (!FEEDBACK_KEYS.includes(key)) return res.status(404).json({ ok: false, error: 'Unknown feedback key' });
+      if (typeof entry !== 'object' || Array.isArray(entry)) return res.status(400).json({ ok: false, error: 'entry must be an object' });
+      if (JSON.stringify(entry).length > MAX_ENTRY_BYTES) return res.status(413).json({ ok: false, error: 'Submission too large' });
       await redis.lpush(key, JSON.stringify(entry));
 
       // Optional instant Slack notification
