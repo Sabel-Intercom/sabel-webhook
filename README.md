@@ -141,6 +141,10 @@ Switching a client over:
 
 Rotating a token is step 1 again with no token: the old one stops the moment the new hash lands, so rebuild first. Keys with no lock are untouched, so clients move one at a time.
 
+### Readiness inputs: one key per client
+
+`readiness-inputs-<slug>-v1` holds one client's project inputs list and confirmed access rows for the readiness form, where `<slug>` is the slug in that client's form key `readiness-<slug>-v1`. These keys are matched by pattern (`READINESS_INPUTS_CLIENT_KEY`), so a new client needs no change to `ALLOWED_KEYS`. Reads follow the per-key lock above. Writes always need `X-Team-Token`, locked or not: a client token can read its own key and cannot write it.
+
 Team pages and automations that read a locked key (Internal Ops, Task Hub, Ops Hub, Fly sync, SwiftBar) must send `X-Team-Token`.
 
 Tests: `npm test` (no Upstash needed; Redis is mocked in memory).
