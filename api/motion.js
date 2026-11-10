@@ -15,16 +15,22 @@
 //
 // It never writes to Motion — read-only, GET only.
 
+//
+// TEAM ONLY (10 Nov 2026): task titles and assignees are internal, so every
+// GET needs the team passcode in X-Team-Token. See lib/team-gate.js.
+import { requireTeam, TEAM_HEADERS } from '../lib/team-gate.js';
+
 const MOTION_API = 'https://api.usemotion.com/v1/tasks';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', TEAM_HEADERS);
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'GET') {
     return res.status(405).json({ ok: false, error: 'Method not allowed' });
   }
+  if (!requireTeam(req, res)) return;
 
   const key = process.env.MOTION_API_KEY;
   if (!key) {

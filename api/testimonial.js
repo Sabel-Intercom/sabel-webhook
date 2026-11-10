@@ -8,6 +8,8 @@
 // fraction of a penny. Without the key this returns 503 and the form
 // quietly falls back to its built-in sentence stitcher.
 
+export const MAX_ANSWER_CHARS = 2000;
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -21,6 +23,16 @@ export default async function handler(req, res) {
     const { challenge = '', results = '', valued = '', nps = null } = req.body || {};
     if (!challenge && !results && !valued) {
       return res.status(400).json({ ok: false, error: 'No answers provided' });
+    }
+    // This endpoint is open (clients use the form signed out) and spends our
+    // Anthropic key, so bound what one call can send: plain strings of a
+    // survey answer's length, and a 0-10 score. Anything else is not the form.
+    const answers = [challenge, results, valued];
+    if (answers.some(a => typeof a !== 'string' || a.length > MAX_ANSWER_CHARS)) {
+      return res.status(400).json({ ok: false, error: 'Answers too long' });
+    }
+    if (nps !== null && nps !== '' && !(Number(nps) >= 0 && Number(nps) <= 10)) {
+      return res.status(400).json({ ok: false, error: 'Bad score' });
     }
 
     const r = await fetch('https://api.anthropic.com/v1/messages', {
