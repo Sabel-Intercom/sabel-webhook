@@ -8,11 +8,15 @@
 //   NOTIFY_TO        - the address to send notifications to (e.g. richard@sabelcustomersuccess.com)
 //   NOTIFY_FROM      - a verified Resend sender (e.g. info@sabelcustomersuccess.com)
 
+// The two sites the calculator is served from. Origins are scheme + host only.
+const ALLOWED_ORIGINS = ['https://hubs.sabelcustomersuccess.com', 'https://sabel-intercom.github.io'];
+
 export default async function handler(req, res) {
-  // CORS: allow only the Sabel GitHub Pages site to POST here.
-  // Origins are scheme + host only (no path), so the calculator at
-  // /Intake-forms/... is covered by this host.
-  res.setHeader('Access-Control-Allow-Origin', 'https://sabel-intercom.github.io');
+  // CORS: only the calculator's own sites may POST here. The header carries
+  // one origin, so it names the caller when the caller is on the list.
+  const origin = (req.headers && req.headers.origin) || '';
+  res.setHeader('Access-Control-Allow-Origin', ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0]);
+  res.setHeader('Vary', 'Origin');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
