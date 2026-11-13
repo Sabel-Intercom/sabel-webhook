@@ -74,6 +74,7 @@ export const ALLOWED_KEYS = [
   'migration-intake-smokeball-v1',
   'kinatico-tracker-v1',
   'readiness-kinatico-v1',
+  'smokeball-archie-tracker-v1',
 ];
 
 // -------------------------------------------------------------
